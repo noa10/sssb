@@ -1,0 +1,14 @@
+Local web fonts used by this redesign
+=====================================
+
+Archivo
+- Source: Google Fonts (https://fonts.google.com/specimen/Archivo)
+- License: SIL Open Font License 1.1
+- File: archivo-latin.woff2
+
+IBM Plex Mono
+- Source: Google Fonts (https://fonts.google.com/specimen/IBM+Plex+Mono)
+- License: SIL Open Font License 1.1
+- Files: ibm-plex-mono-400.woff2, ibm-plex-mono-500.woff2
+
+The font files are stored locally so the prototype does not depend on an external font service.
