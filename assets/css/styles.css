@@ -96,6 +96,7 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --gutter: clamp(20px, 4.2vw, 64px);
   --section: clamp(72px, 8.5vw, 128px);
+  --utility-height: 32px;
   --header-height: 76px;
   --radius: 2px;
 }
@@ -453,7 +454,7 @@ h3 {
 }
 
 .utility-inner {
-  min-height: 32px;
+  min-height: var(--utility-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -476,7 +477,7 @@ h3 {
 .utility-list a {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
+  min-height: var(--utility-height);
   color: #c7d3ce;
   text-decoration: none;
   transition: color 160ms var(--ease-out);
@@ -526,16 +527,11 @@ h3 {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  color: var(--signal-bright);
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  flex: none;
+  object-fit: contain;
 }
 
 .brand-name {
@@ -930,7 +926,9 @@ body.menu-open .mobile-scrim {
 .hero {
   position: relative;
   isolation: isolate;
-  min-height: clamp(600px, 80svh, 820px);
+  /* Reserve space for both header bars and their borders. */
+  min-height: calc(100vh - var(--utility-height) - var(--header-height) - 2px);
+  min-height: calc(100svh - var(--utility-height) - var(--header-height) - 2px);
   display: flex;
   background: var(--ink);
   color: var(--white);
@@ -961,14 +959,15 @@ body.menu-open .mobile-scrim {
   z-index: 1;
   width: min(calc(100% - (var(--gutter) * 2)), 1440px);
   margin-inline: auto;
-  padding-block: clamp(74px, 10vw, 122px) 54px;
+  padding-block: clamp(28px, 5svh, 72px) clamp(24px, 4svh, 48px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: clamp(24px, 4svh, 56px);
 }
 
 .hero-grid {
   display: grid;
+  margin-block: auto;
   grid-template-columns: minmax(0, 8.4fr) minmax(250px, 3.6fr);
   gap: clamp(40px, 6vw, 100px);
   align-items: end;
@@ -982,7 +981,7 @@ body.menu-open .mobile-scrim {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: clamp(16px, 3svh, 28px);
   font-family: var(--mono);
   font-size: 0.68rem;
   font-weight: 500;
@@ -1000,6 +999,7 @@ body.menu-open .mobile-scrim {
 
 .hero h1 {
   max-width: 900px;
+  font-size: clamp(2.8rem, min(5.6vw, 8.5svh), 6rem);
   color: var(--white);
   letter-spacing: -0.055em;
 }
@@ -1010,7 +1010,7 @@ body.menu-open .mobile-scrim {
 
 .hero-summary {
   max-width: 580px;
-  margin-top: 28px;
+  margin-top: clamp(18px, 3svh, 28px);
   font-size: clamp(1rem, 1.25vw, 1.14rem);
   line-height: 1.62;
   color: #c4d0cb;
@@ -1021,7 +1021,7 @@ body.menu-open .mobile-scrim {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px 24px;
-  margin-top: 36px;
+  margin-top: clamp(20px, 4svh, 36px);
 }
 
 .hero-side {
@@ -1068,7 +1068,6 @@ body.menu-open .mobile-scrim {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-top: clamp(54px, 8vw, 98px);
   padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.16);
   color: #94a8a1;
@@ -1227,21 +1226,12 @@ body.menu-open .mobile-scrim {
 .cap-card {
   display: flex;
   flex-direction: column;
+  grid-column: span 4;
   color: var(--ink);
   text-decoration: none;
   border-top: 1px solid var(--line);
   padding-top: 10px;
   transition: transform 160ms var(--ease-out);
-}
-
-.cap-card:nth-child(1),
-.cap-card:nth-child(4) {
-  grid-column: span 7;
-}
-
-.cap-card:nth-child(2),
-.cap-card:nth-child(3) {
-  grid-column: span 5;
 }
 
 .cap-card:active {
@@ -2130,7 +2120,7 @@ body.menu-open .mobile-scrim {
 
 .related-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   border-top: 1px solid var(--line-dark);
 }
 
@@ -2748,10 +2738,6 @@ body.menu-open .mobile-scrim {
     display: inline-flex;
   }
 
-  .hero {
-    min-height: 700px;
-  }
-
   .hero-grid {
     grid-template-columns: 1fr;
     gap: 38px;
@@ -2785,6 +2771,10 @@ body.menu-open .mobile-scrim {
 
   .cap-card:nth-child(n) {
     grid-column: span 6;
+  }
+
+  .cap-card:last-child {
+    grid-column: 4 / span 6;
   }
 
   .about-grid {
@@ -2962,6 +2952,7 @@ body.menu-open .mobile-scrim {
 
 @media (max-width: 767px) {
   :root {
+    --utility-height: 44px;
     --header-height: 64px;
   }
 
@@ -2970,12 +2961,7 @@ body.menu-open .mobile-scrim {
   }
 
   .utility-inner {
-    min-height: 44px;
     justify-content: flex-end;
-  }
-
-  .utility-list a {
-    min-height: 44px;
   }
 
   .footer-links a {
@@ -3026,12 +3012,8 @@ body.menu-open .mobile-scrim {
     white-space: nowrap;
   }
 
-  .hero {
-    min-height: 660px;
-  }
-
   .hero-inner {
-    padding-block: 62px 40px;
+    padding-block: clamp(24px, 4svh, 40px) clamp(20px, 3svh, 32px);
   }
 
   .hero-overlay {
@@ -3041,16 +3023,16 @@ body.menu-open .mobile-scrim {
   }
 
   .hero h1 {
-    font-size: clamp(2.8rem, 12vw, 4.4rem);
+    font-size: clamp(2.25rem, min(11vw, 7svh), 4.4rem);
     letter-spacing: -0.05em;
   }
 
   .hero-summary {
-    margin-top: 22px;
+    margin-top: clamp(16px, 2.5svh, 22px);
   }
 
   .hero-actions {
-    margin-top: 28px;
+    margin-top: clamp(20px, 3svh, 28px);
   }
 
   .hero-actions .btn {
@@ -3062,7 +3044,6 @@ body.menu-open .mobile-scrim {
   }
 
   .hero-foot {
-    margin-top: 48px;
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;

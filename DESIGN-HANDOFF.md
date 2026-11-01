@@ -11,10 +11,10 @@ This archive is the source of truth for turning the design into production code.
 
 ## Source map
 - Primary entry: `index.html`
-- HTML screens detected: 8
-- Stylesheets detected: 1
+- HTML screens detected: 14 (13 active pages and one legacy redirect)
+- Stylesheets detected: 2
 - Script/component files detected: 1
-- Supporting assets detected: 35
+- Supporting assets detected: 69
 
 ## Responsive contract
 Validate the implementation across this 2025–2026 viewport matrix:
@@ -66,34 +66,75 @@ For responsive web exports, treat these as a modern breakpoint system for one ad
 - `about.html`
 - `contact.html`
 - `diving-equipments.html`
+- `fxc.html`
 - `index.html`
 - `inflatable-boats.html`
-- `other-tradings.html`
+- `jfd.html`
+- `other-tradings.html` — redirect to `products.html`
 - `our-policy.html`
 - `parachute-systems.html`
+- `products.html`
+- `safe-at-sea.html`
+- `seacraft.html`
+- `zodiac-nautic.html`
 
 ## Styles
 - `assets/css/styles.css`
+- `assets/css/products.css`
 
 ## Scripts/components
 - `assets/js/site.js`
 
 ## Assets and supporting files
+- `assets/brochures/fxc-company-overview.pdf`
+- `assets/brochures/jfd-company-overview.pdf`
+- `assets/brochures/safe-at-sea-rescuerunner-brochure.pdf`
+- `assets/brochures/seacraft-product-catalogue.pdf`
+- `assets/brochures/sources.json`
+- `assets/brochures/zodiac-nautic-brochure.pdf`
+- `assets/data/products.json`
+- `assets/fonts/LICENSE-NOTES.txt`
 - `assets/fonts/archivo-latin.woff2`
 - `assets/fonts/ibm-plex-mono-400.woff2`
 - `assets/fonts/ibm-plex-mono-500.woff2`
-- `assets/fonts/LICENSE-NOTES.txt`
 - `assets/img/about-company.jpg`
 - `assets/img/about-team.jpg`
 - `assets/img/card-boats.jpg`
 - `assets/img/card-diving.jpg`
 - `assets/img/card-parachute.jpg`
 - `assets/img/card-trading.jpg`
+- `assets/img/companies/fxc-logo.jpg`
+- `assets/img/companies/jfd-logo.jpg`
+- `assets/img/companies/jfd-products.jpg`
+- `assets/img/companies/safe-at-sea-logo.jpeg`
+- `assets/img/companies/safe-at-sea-rescuerunner.png`
+- `assets/img/companies/seacraft-logo.png`
+- `assets/img/companies/zodiac-logo.jpg`
 - `assets/img/contact-office.jpg`
 - `assets/img/credits.json`
 - `assets/img/favicon.png`
 - `assets/img/hero-mission.jpg`
 - `assets/img/policy-operations.jpg`
+- `assets/img/products/fxc-mc4.jpg`
+- `assets/img/products/fxc-model-12000.jpg`
+- `assets/img/products/fxc-model-2101.jpg`
+- `assets/img/products/fxc-t10d.webp`
+- `assets/img/products/jfd-enforcer.jpg`
+- `assets/img/products/jfd-shadow.jpg`
+- `assets/img/products/jfd-stealth-mr.jpg`
+- `assets/img/products/jfd-stealth-sc.jpg`
+- `assets/img/products/safe-at-sea-elecorunner.jpeg`
+- `assets/img/products/safe-at-sea-guardrunner.png`
+- `assets/img/products/safe-at-sea-rescuerunner.png`
+- `assets/img/products/safe-at-sea-saferunner.png`
+- `assets/img/products/seacraft-enc3-pro.png`
+- `assets/img/products/seacraft-future.png`
+- `assets/img/products/seacraft-ghost.png`
+- `assets/img/products/seacraft-go.png`
+- `assets/img/products/zodiac-medline68.webp`
+- `assets/img/products/zodiac-open55.webp`
+- `assets/img/products/zodiac-open65.webp`
+- `assets/img/products/zodiac-pro55.webp`
 - `assets/img/proj-aka.jpg`
 - `assets/img/proj-cargo.jpg`
 - `assets/img/proj-diving.jpg`
@@ -126,3 +167,12 @@ For responsive web exports, treat these as a modern breakpoint system for one ad
 8. Confirm the production result visually matches the exported design before refactoring internals.
 9. Reject implementation shortcuts that flatten the design into generic cards, generic gradients, placeholder stats, or framework-default typography.
 10. If a detail is ambiguous, keep the exported HTML/CSS/JS behavior rather than inventing a new pattern.
+
+## Current product structure
+- `products.html` is the full catalogue entry point. Desktop/mobile navigation and footers use the same three category routes.
+- Diving Equipment: JFD and Seacraft; Parachute Systems: FXC; Inflatable Systems: Zodiac Nautic and Safe at Sea.
+- Each company page has an introduction and four individual product listings with photographs, specifications, key features and manufacturer references.
+- `assets/data/products.json` records verified product details, category mapping and company profiles. Keep static directories, model counts, company pages and contact options in agreement with it.
+- Company and model enquiry links open the matching contact selection. Unknown query values are ignored; editing a selection preserves a visitor's custom message.
+- The contact form is a client-side validation preview. It does not deliver enquiries until a real submission service is connected.
+- Brochure downloads are not linked from the current website. The old `other-tradings.html` URL redirects to the current catalogue.

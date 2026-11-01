@@ -24,18 +24,27 @@
 
   function initCurrentPage() {
     var page = document.body.dataset.page || "";
-    var productPages = ["diving", "parachute", "boats", "other"];
+    var company = document.body.dataset.company || "";
+    var productPages = ["products", "diving", "parachute", "boats"];
     var isProduct = productPages.indexOf(page) !== -1;
 
     document.querySelectorAll("[data-nav]").forEach(function (link) {
       var nav = link.getAttribute("data-nav");
-      if (nav === page) {
-        link.setAttribute("aria-current", "page");
+      if (nav === page && link.tagName === "A") {
+        link.setAttribute("aria-current", company ? "location" : "page");
       }
       if (nav === "products" && isProduct) {
         link.classList.add("is-section");
       }
     });
+
+    if (company) {
+      document.querySelectorAll("a[data-company]").forEach(function (link) {
+        if (link.dataset.company === company) {
+          link.setAttribute("aria-current", "page");
+        }
+      });
+    }
 
     if (isProduct) {
       var mobileProducts = document.querySelector(".mobile-products");
@@ -331,6 +340,40 @@
     var submit = form.querySelector('button[type="submit"]');
     var submitLabel = submit ? submit.innerHTML : "";
     var attempted = false;
+
+    var productChoice = form.querySelector("[data-product-choice]");
+    var enquiryType = form.querySelector('[name="enquiry"]');
+    var enquiryMessage = form.querySelector('[name="message"]');
+    var generatedMessage = "";
+
+    function updateProductEnquiry() {
+      if (!productChoice || !enquiryMessage) return;
+      var option = productChoice.options[productChoice.selectedIndex];
+      if (!option || !option.value || !option.dataset.enquiryLabel) {
+        if (enquiryMessage.value === generatedMessage) enquiryMessage.value = "";
+        generatedMessage = "";
+        return;
+      }
+      if (enquiryType && !enquiryType.value) enquiryType.value = "product";
+      var message = "I would like to enquire about " + option.dataset.enquiryLabel + ".";
+      if (!enquiryMessage.value || enquiryMessage.value === generatedMessage) {
+        enquiryMessage.value = message;
+        generatedMessage = message;
+      }
+    }
+
+    if (productChoice) {
+      var enquiryParams = new URLSearchParams(window.location.search);
+      var selectedCompany = enquiryParams.get("company") || "";
+      var selectedProduct = enquiryParams.get("product") || "";
+      var choiceValue = selectedCompany + (selectedProduct ? "/" + selectedProduct : "");
+      var requestedOption = Array.prototype.find.call(productChoice.options, function (option) {
+        return option.value && option.value === choiceValue;
+      });
+      if (requestedOption) productChoice.value = requestedOption.value;
+      productChoice.addEventListener("change", updateProductEnquiry);
+      updateProductEnquiry();
+    }
 
     var validators = {
       name: function (value) {

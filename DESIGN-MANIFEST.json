@@ -5,22 +5,57 @@
   "sourceFiles": {
     "all": [
       "about.html",
+      "assets/brochures/fxc-company-overview.pdf",
+      "assets/brochures/jfd-company-overview.pdf",
+      "assets/brochures/safe-at-sea-rescuerunner-brochure.pdf",
+      "assets/brochures/seacraft-product-catalogue.pdf",
+      "assets/brochures/sources.json",
+      "assets/brochures/zodiac-nautic-brochure.pdf",
+      "assets/css/products.css",
       "assets/css/styles.css",
+      "assets/data/products.json",
+      "assets/fonts/LICENSE-NOTES.txt",
       "assets/fonts/archivo-latin.woff2",
       "assets/fonts/ibm-plex-mono-400.woff2",
       "assets/fonts/ibm-plex-mono-500.woff2",
-      "assets/fonts/LICENSE-NOTES.txt",
       "assets/img/about-company.jpg",
       "assets/img/about-team.jpg",
       "assets/img/card-boats.jpg",
       "assets/img/card-diving.jpg",
       "assets/img/card-parachute.jpg",
       "assets/img/card-trading.jpg",
+      "assets/img/companies/fxc-logo.jpg",
+      "assets/img/companies/jfd-logo.jpg",
+      "assets/img/companies/jfd-products.jpg",
+      "assets/img/companies/safe-at-sea-logo.jpeg",
+      "assets/img/companies/safe-at-sea-rescuerunner.png",
+      "assets/img/companies/seacraft-logo.png",
+      "assets/img/companies/zodiac-logo.jpg",
       "assets/img/contact-office.jpg",
       "assets/img/credits.json",
       "assets/img/favicon.png",
       "assets/img/hero-mission.jpg",
       "assets/img/policy-operations.jpg",
+      "assets/img/products/fxc-mc4.jpg",
+      "assets/img/products/fxc-model-12000.jpg",
+      "assets/img/products/fxc-model-2101.jpg",
+      "assets/img/products/fxc-t10d.webp",
+      "assets/img/products/jfd-enforcer.jpg",
+      "assets/img/products/jfd-shadow.jpg",
+      "assets/img/products/jfd-stealth-mr.jpg",
+      "assets/img/products/jfd-stealth-sc.jpg",
+      "assets/img/products/safe-at-sea-elecorunner.jpeg",
+      "assets/img/products/safe-at-sea-guardrunner.png",
+      "assets/img/products/safe-at-sea-rescuerunner.png",
+      "assets/img/products/safe-at-sea-saferunner.png",
+      "assets/img/products/seacraft-enc3-pro.png",
+      "assets/img/products/seacraft-future.png",
+      "assets/img/products/seacraft-ghost.png",
+      "assets/img/products/seacraft-go.png",
+      "assets/img/products/zodiac-medline68.webp",
+      "assets/img/products/zodiac-open55.webp",
+      "assets/img/products/zodiac-open65.webp",
+      "assets/img/products/zodiac-pro55.webp",
       "assets/img/proj-aka.jpg",
       "assets/img/proj-cargo.jpg",
       "assets/img/proj-diving.jpg",
@@ -44,44 +79,91 @@
       "assets/js/site.js",
       "contact.html",
       "diving-equipments.html",
+      "fxc.html",
       "index.html",
       "inflatable-boats.html",
+      "jfd.html",
       "other-tradings.html",
       "our-policy.html",
-      "parachute-systems.html"
+      "parachute-systems.html",
+      "products.html",
+      "safe-at-sea.html",
+      "seacraft.html",
+      "zodiac-nautic.html"
     ],
     "html": [
       "about.html",
       "contact.html",
       "diving-equipments.html",
+      "fxc.html",
       "index.html",
       "inflatable-boats.html",
+      "jfd.html",
       "other-tradings.html",
       "our-policy.html",
-      "parachute-systems.html"
+      "parachute-systems.html",
+      "products.html",
+      "safe-at-sea.html",
+      "seacraft.html",
+      "zodiac-nautic.html"
     ],
     "css": [
+      "assets/css/products.css",
       "assets/css/styles.css"
     ],
     "scriptsAndComponents": [
       "assets/js/site.js"
     ],
     "assets": [
+      "assets/brochures/fxc-company-overview.pdf",
+      "assets/brochures/jfd-company-overview.pdf",
+      "assets/brochures/safe-at-sea-rescuerunner-brochure.pdf",
+      "assets/brochures/seacraft-product-catalogue.pdf",
+      "assets/brochures/sources.json",
+      "assets/brochures/zodiac-nautic-brochure.pdf",
+      "assets/data/products.json",
+      "assets/fonts/LICENSE-NOTES.txt",
       "assets/fonts/archivo-latin.woff2",
       "assets/fonts/ibm-plex-mono-400.woff2",
       "assets/fonts/ibm-plex-mono-500.woff2",
-      "assets/fonts/LICENSE-NOTES.txt",
       "assets/img/about-company.jpg",
       "assets/img/about-team.jpg",
       "assets/img/card-boats.jpg",
       "assets/img/card-diving.jpg",
       "assets/img/card-parachute.jpg",
       "assets/img/card-trading.jpg",
+      "assets/img/companies/fxc-logo.jpg",
+      "assets/img/companies/jfd-logo.jpg",
+      "assets/img/companies/jfd-products.jpg",
+      "assets/img/companies/safe-at-sea-logo.jpeg",
+      "assets/img/companies/safe-at-sea-rescuerunner.png",
+      "assets/img/companies/seacraft-logo.png",
+      "assets/img/companies/zodiac-logo.jpg",
       "assets/img/contact-office.jpg",
       "assets/img/credits.json",
       "assets/img/favicon.png",
       "assets/img/hero-mission.jpg",
       "assets/img/policy-operations.jpg",
+      "assets/img/products/fxc-mc4.jpg",
+      "assets/img/products/fxc-model-12000.jpg",
+      "assets/img/products/fxc-model-2101.jpg",
+      "assets/img/products/fxc-t10d.webp",
+      "assets/img/products/jfd-enforcer.jpg",
+      "assets/img/products/jfd-shadow.jpg",
+      "assets/img/products/jfd-stealth-mr.jpg",
+      "assets/img/products/jfd-stealth-sc.jpg",
+      "assets/img/products/safe-at-sea-elecorunner.jpeg",
+      "assets/img/products/safe-at-sea-guardrunner.png",
+      "assets/img/products/safe-at-sea-rescuerunner.png",
+      "assets/img/products/safe-at-sea-saferunner.png",
+      "assets/img/products/seacraft-enc3-pro.png",
+      "assets/img/products/seacraft-future.png",
+      "assets/img/products/seacraft-ghost.png",
+      "assets/img/products/seacraft-go.png",
+      "assets/img/products/zodiac-medline68.webp",
+      "assets/img/products/zodiac-open55.webp",
+      "assets/img/products/zodiac-open65.webp",
+      "assets/img/products/zodiac-pro55.webp",
       "assets/img/proj-aka.jpg",
       "assets/img/proj-cargo.jpg",
       "assets/img/proj-diving.jpg",
@@ -118,7 +200,7 @@
     {
       "file": "diving-equipments.html",
       "role": "screen",
-      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+      "implementationNote": "Company logo directory. Link every logo to the company introduction and individual product details."
     },
     {
       "file": "index.html",
@@ -128,12 +210,12 @@
     {
       "file": "inflatable-boats.html",
       "role": "screen",
-      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+      "implementationNote": "Company logo directory. Link every logo to the company introduction and individual product details."
     },
     {
       "file": "other-tradings.html",
       "role": "screen",
-      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+      "implementationNote": "Preserve this old URL as a redirect to products.html. The retired trading category is no longer presented."
     },
     {
       "file": "our-policy.html",
@@ -143,7 +225,37 @@
     {
       "file": "parachute-systems.html",
       "role": "screen",
-      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+      "implementationNote": "Company logo directory. Link every logo to the company introduction and individual product details."
+    },
+    {
+      "file": "jfd.html",
+      "role": "screen",
+      "implementationNote": "Company introduction and four individual product cards, each with its own photo, description, features and specifications. Keep product details directly on the company page."
+    },
+    {
+      "file": "seacraft.html",
+      "role": "screen",
+      "implementationNote": "Company introduction and four individual product cards, each with its own photo, description, features and specifications. Keep product details directly on the company page."
+    },
+    {
+      "file": "fxc.html",
+      "role": "screen",
+      "implementationNote": "Company introduction and four individual product cards, each with its own photo, description, features and specifications. Keep product details directly on the company page."
+    },
+    {
+      "file": "zodiac-nautic.html",
+      "role": "screen",
+      "implementationNote": "Company introduction and four individual product cards, each with its own photo, description, features and specifications. Keep product details directly on the company page."
+    },
+    {
+      "file": "safe-at-sea.html",
+      "role": "screen",
+      "implementationNote": "Company introduction and four individual product cards, each with its own photo, description, features and specifications. Keep product details directly on the company page."
+    },
+    {
+      "file": "products.html",
+      "role": "screen",
+      "implementationNote": "Full product catalogue: three category groups and five linked company logos. Individual product details are on the five company pages."
     }
   ],
   "screenFilePolicy": {
@@ -216,7 +328,19 @@
       "copy/generate/share actions where present",
       "player or quick controls where present"
     ],
-    "note": "If the prototype is static, derive missing behavior from visible controls and document it before coding."
+    "note": "If the prototype is static, derive missing behavior from visible controls and document it before coding.",
+    "productEnquiryContext": {
+      "files": [
+        "jfd.html",
+        "seacraft.html",
+        "fxc.html",
+        "zodiac-nautic.html",
+        "safe-at-sea.html",
+        "contact.html",
+        "assets/js/site.js"
+      ],
+      "behavior": "Company and model links preselect a known option on the contact form and generate an editable message. Custom visitor messages are preserved. The form remains a local validation preview."
+    }
   },
   "responsiveViewports": [
     {

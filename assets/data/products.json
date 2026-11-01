@@ -1,0 +1,738 @@
+{
+  "verified_on": "2026-11-01",
+  "companies": {
+    "jfd": [
+      {
+        "id": "shadow",
+        "name": "Shadow",
+        "type": "Tactical diving rebreather",
+        "image": "jfd-shadow.jpg",
+        "photo": true,
+        "summary": "An underwater life-support system for extended defence diving tasks. Its modular layout supports front mounting or a back-mount kit, with harness options for integrating other equipment.",
+        "specs": [
+          [
+            "System",
+            "Oxygen rebreather"
+          ],
+          [
+            "Mounting",
+            "Front or back-mount kit"
+          ],
+          [
+            "Role",
+            "Extended-duration diving"
+          ],
+          [
+            "Options",
+            "Excursion conversion"
+          ]
+        ],
+        "features": [
+          "Equipment-vest clip-on interface options",
+          "Back-mount and standalone harness configurations",
+          "Modular accessories for different requirements"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/defence-diving/"
+      },
+      {
+        "id": "enforcer",
+        "name": "Enforcer",
+        "type": "Compact tactical rebreather",
+        "image": "jfd-enforcer.jpg",
+        "photo": true,
+        "summary": "A compact rebreather developed for shorter, high-tempo diving tasks such as maritime interdiction and law enforcement. The design emphasises low bulk, straightforward servicing and equipment integration.",
+        "specs": [
+          [
+            "System",
+            "Tactical rebreather"
+          ],
+          [
+            "Design",
+            "Compact and lightweight"
+          ],
+          [
+            "Role",
+            "Short-duration tasks"
+          ],
+          [
+            "Applications",
+            "Interdiction / law enforcement"
+          ]
+        ],
+        "features": [
+          "ExtendAir cartridge system",
+          "Low breathing resistance",
+          "Components designed for field maintenance"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/defence-diving/"
+      },
+      {
+        "id": "stealth-multi-role",
+        "name": "Stealth Multi-Role",
+        "type": "Modular life-support system",
+        "image": "jfd-stealth-mr.jpg",
+        "photo": true,
+        "summary": "A modular rebreather designed to accommodate different specialist diving configurations. It supports requirements spanning special operations and mine countermeasures, with integration for diver propulsion and delivery platforms.",
+        "specs": [
+          [
+            "System",
+            "Multi-role rebreather"
+          ],
+          [
+            "Configuration",
+            "Modular"
+          ],
+          [
+            "Applications",
+            "Specialist defence diving"
+          ],
+          [
+            "Integration",
+            "Diver delivery platforms"
+          ]
+        ],
+        "features": [
+          "Configurable for different diving roles",
+          "Designed for efficient maintenance",
+          "Supports integration with diver propulsion vehicles"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/defence-diving/"
+      },
+      {
+        "id": "stealth-sc",
+        "name": "Stealth SC",
+        "type": "Semi-closed mixed-gas rebreather",
+        "image": "jfd-stealth-sc.jpg",
+        "photo": true,
+        "summary": "A semi-closed life-support system for mine-countermeasure diving. The Stealth SC combines mixed-gas operation with a design focused on simple use and maintenance.",
+        "specs": [
+          [
+            "System",
+            "Semi-closed rebreather"
+          ],
+          [
+            "Breathing gas",
+            "Mixed gas"
+          ],
+          [
+            "Primary role",
+            "Mine countermeasures"
+          ],
+          [
+            "Design focus",
+            "Serviceability"
+          ]
+        ],
+        "features": [
+          "Purpose-built MCM diving equipment",
+          "Semi-closed breathing circuit",
+          "Established through-life support options"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/defence-diving/"
+      }
+    ],
+    "seacraft": [
+      {
+        "id": "future-1000",
+        "name": "FUTURE 1000",
+        "type": "Diver propulsion vehicle",
+        "image": "seacraft-future.png",
+        "summary": "A 1000 Wh underwater scooter for technical diving and exploration. The compact 160 mm body combines magnetic propulsion, a digital control display and an external charging connection.",
+        "specs": [
+          [
+            "Battery",
+            "1000 Wh"
+          ],
+          [
+            "Weight*",
+            "15.9 kg"
+          ],
+          [
+            "Length",
+            "845 mm"
+          ],
+          [
+            "Housing diameter",
+            "160 mm"
+          ]
+        ],
+        "spec_note": "* Includes battery and fresh-water ballast.",
+        "features": [
+          "Magnetic propulsion drive",
+          "External sealed charging port",
+          "Digital battery and running-time information"
+        ],
+        "source": "https://seacraft.eu/products/scooters/future/"
+      },
+      {
+        "id": "ghost-2000",
+        "name": "GHOST 2000",
+        "type": "Diver propulsion vehicle",
+        "image": "seacraft-ghost.png",
+        "summary": "A high-capacity DPV with a 2000 Wh battery and a 208 mm body. GHOST is intended for longer exploration tasks and can be equipped with Seacraft navigation equipment.",
+        "specs": [
+          [
+            "Battery",
+            "2000 Wh"
+          ],
+          [
+            "Weight*",
+            "22.9 kg"
+          ],
+          [
+            "Length",
+            "800 mm"
+          ],
+          [
+            "Housing diameter",
+            "208 mm"
+          ]
+        ],
+        "spec_note": "* Includes battery and fresh-water ballast.",
+        "features": [
+          "Large rechargeable battery package",
+          "External charging connection",
+          "Compatible navigation-console mounting options"
+        ],
+        "source": "https://seacraft.eu/products/scooters/ghost/"
+      },
+      {
+        "id": "go",
+        "name": "GO!",
+        "type": "Compact diver propulsion vehicle",
+        "image": "seacraft-go.png",
+        "summary": "A compact scooter built around a segmented rechargeable battery. Its shorter body and dedicated transport container make it suited to divers who need a portable propulsion package.",
+        "specs": [
+          [
+            "Battery",
+            "582 Wh / 6 segments"
+          ],
+          [
+            "Weight*",
+            "9.7 kg"
+          ],
+          [
+            "Length",
+            "520 mm"
+          ],
+          [
+            "Housing diameter",
+            "160 mm"
+          ]
+        ],
+        "spec_note": "* Includes battery and fresh-water ballast.",
+        "features": [
+          "Six 97 Wh battery segments",
+          "Compact body for easier transport",
+          "Dedicated EPP transport container in the standard set"
+        ],
+        "source": "https://seacraft.eu/products/scooters/go/"
+      },
+      {
+        "id": "enc3-pro",
+        "name": "ENC3-PRO",
+        "type": "Electronic navigation console",
+        "image": "seacraft-enc3-pro.png",
+        "summary": "An underwater navigation console that combines route planning and dead-reckoning with position correction from an external surface GPS receiver. It can be used on a scooter or as part of a handheld survey arrangement.",
+        "specs": [
+          [
+            "Waypoints",
+            "29 per route"
+          ],
+          [
+            "Route memory",
+            "50 routes"
+          ],
+          [
+            "Data connection",
+            "Bluetooth 4.2 / USB"
+          ],
+          [
+            "Console weight",
+            "290 g"
+          ]
+        ],
+        "features": [
+          "External GPS receiver and buoy options",
+          "Dive-track recording and export",
+          "Mounting kits for different DPV models"
+        ],
+        "source": "https://seacraft.eu/products/accessories-and-spares/enc3-pro/"
+      }
+    ],
+    "fxc": [
+      {
+        "id": "mc4",
+        "name": "MC-4",
+        "type": "Ram-air personnel parachute system",
+        "image": "fxc-mc4.jpg",
+        "photo": true,
+        "summary": "A dual-canopy personnel parachute system with the main and reserve carried on the back. This layout leaves the front of the wearer available for equipment while providing a steerable ram-air canopy.",
+        "specs": [
+          [
+            "Canopy type",
+            "Ram-air main and reserve"
+          ],
+          [
+            "Canopy area",
+            "370 sq ft"
+          ],
+          [
+            "Configuration",
+            "Back-worn dual parachute"
+          ],
+          [
+            "Part number",
+            "821-00464"
+          ]
+        ],
+        "features": [
+          "Matching main and reserve canopy designs",
+          "Front kept clear for equipment",
+          "Integrated harness and container arrangement"
+        ],
+        "source": "https://www.fxcguardian.com/product/mc-4-parachute-system/"
+      },
+      {
+        "id": "t10d",
+        "name": "T-10D (Modified)",
+        "type": "Troop back personnel parachute",
+        "image": "fxc-t10d.webp",
+        "photo": true,
+        "summary": "A personnel parachute developed from the T-10B/C configuration. The modified assembly combines a universal static-line system with changes to the harness, pack and canopy design.",
+        "specs": [
+          [
+            "Product type",
+            "Personnel parachute"
+          ],
+          [
+            "Deployment system",
+            "Static line"
+          ],
+          [
+            "Listed weight",
+            "31 lb"
+          ],
+          [
+            "Part number",
+            "821-00090-5"
+          ]
+        ],
+        "features": [
+          "Universal static-line assembly",
+          "Longer shoulder pads and saddle cushion",
+          "Modified pocket bands and canopy configuration"
+        ],
+        "source": "https://www.fxcguardian.com/product/t-10d-troop-back-personnel-parachute/"
+      },
+      {
+        "id": "model-12000",
+        "name": "Model 12000",
+        "type": "Automatic parachute ripcord release",
+        "image": "fxc-model-12000.jpg",
+        "summary": "A mechanical automatic activation device for personnel parachute applications. The Model 12000-25 uses barometric-pressure and descent-rate sensing without batteries or pyrotechnic components.",
+        "specs": [
+          [
+            "Mechanism",
+            "Mechanical / non-pyrotechnic"
+          ],
+          [
+            "Control",
+            "Pressure and rate sensing"
+          ],
+          [
+            "Power requirement",
+            "Battery-free"
+          ],
+          [
+            "Listed weight",
+            "2 lb"
+          ]
+        ],
+        "features": [
+          "Automatic parachute ripcord release",
+          "Main or reserve installation options",
+          "Configurations for tandem and chest-mounted systems"
+        ],
+        "source": "https://www.fxcguardian.com/product/model-12000/"
+      },
+      {
+        "id": "model-2101",
+        "name": "Model 2101",
+        "type": "Automatic parachute ripcord release",
+        "image": "fxc-model-2101.jpg",
+        "summary": "A mechanical ripcord-release unit designed for escape systems and planned parachute jumps. It combines barometric control and a timing function, with cable-assembly options for different system requirements.",
+        "specs": [
+          [
+            "Mechanism",
+            "Mechanical release"
+          ],
+          [
+            "Control",
+            "Barometric pressure"
+          ],
+          [
+            "Listed weight",
+            "2.3125 lb"
+          ],
+          [
+            "Part number",
+            "811-00156"
+          ]
+        ],
+        "features": [
+          "Mechanical timing functionality",
+          "Different arming and power cable assemblies",
+          "Applications include escape and personnel systems"
+        ],
+        "source": "https://www.fxcguardian.com/product/model-2101/"
+      }
+    ],
+    "zodiac-nautic": [
+      {
+        "id": "open-55",
+        "name": "OPEN 5.5",
+        "type": "Multi-activity rigid inflatable boat",
+        "image": "zodiac-open55.webp",
+        "photo": true,
+        "summary": "A versatile open-deck RIB for fishing, diving and leisure use. Its storage layout and rear seating help accommodate equipment and passengers for a variety of activities.",
+        "specs": [
+          [
+            "Beam",
+            "2.54 m"
+          ],
+          [
+            "Maximum power",
+            "130 HP"
+          ],
+          [
+            "Fuel tank",
+            "100 L"
+          ],
+          [
+            "Maximum capacity",
+            "12 persons"
+          ]
+        ],
+        "features": [
+          "Two pilot seats and a large rear seat",
+          "Storage for watersports and day-trip equipment",
+          "Outboard configuration with removable tube"
+        ],
+        "source": "https://www.zodiac-nautic.com/en/boats/open-5-5/"
+      },
+      {
+        "id": "open-65",
+        "name": "OPEN 6.5",
+        "type": "Multi-activity rigid inflatable boat",
+        "image": "zodiac-open65.webp",
+        "photo": true,
+        "summary": "An open-deck boat with a larger fuel tank and passenger capacity for a broad mix of activities. The layout combines pilot seating, a rear bench and integrated storage.",
+        "specs": [
+          [
+            "Beam",
+            "2.54 m"
+          ],
+          [
+            "Maximum power",
+            "150 HP"
+          ],
+          [
+            "Fuel tank",
+            "200 L"
+          ],
+          [
+            "Maximum capacity",
+            "15 persons"
+          ]
+        ],
+        "features": [
+          "Integrated ski and wakeboard locker",
+          "Tilting console and storage bolster",
+          "Boarding ladder and rear seating"
+        ],
+        "source": "https://www.zodiac-nautic.com/en/boats/open-6-5/"
+      },
+      {
+        "id": "pro-55",
+        "name": "PRO 5.5",
+        "type": "Modular rigid inflatable boat",
+        "image": "zodiac-pro55.webp",
+        "photo": true,
+        "summary": "A configurable RIB for diving, fishing and equipment-based activities. The flat open deck can be fitted with a choice of consoles, seating and accessories to suit the intended use.",
+        "specs": [
+          [
+            "Published length",
+            "5.40 m"
+          ],
+          [
+            "Maximum power",
+            "130 HP"
+          ],
+          [
+            "Fuel tank",
+            "100 L"
+          ],
+          [
+            "Maximum capacity",
+            "12 persons"
+          ]
+        ],
+        "features": [
+          "Modular console and seating choices",
+          "Removable tube construction",
+          "Boarding ladder and open working deck"
+        ],
+        "source": "https://www.zodiac-nautic.com/en/boats/pro-5-5/"
+      },
+      {
+        "id": "medline-68",
+        "name": "MEDLINE 6.8",
+        "type": "Leisure rigid inflatable boat",
+        "image": "zodiac-medline68.webp",
+        "photo": true,
+        "summary": "A leisure-oriented RIB arranged around a bow sundeck and rear U-lounge. Storage compartments, seating and boarding access support longer days on the water with family or friends.",
+        "specs": [
+          [
+            "Published length",
+            "6.95 m"
+          ],
+          [
+            "Maximum power",
+            "250 HP"
+          ],
+          [
+            "Fuel tank",
+            "200 L"
+          ],
+          [
+            "Maximum capacity",
+            "14 persons"
+          ]
+        ],
+        "features": [
+          "Rear U-lounge and bow relaxation area",
+          "Five lockers and dedicated equipment storage",
+          "Rear platforms with boarding access"
+        ],
+        "source": "https://www.zodiac-nautic.com/en/boats/medline-6-8/"
+      }
+    ],
+    "safe-at-sea": [
+      {
+        "id": "rescuerunner",
+        "name": "RescueRunner",
+        "type": "Professional search-and-rescue craft",
+        "image": "safe-at-sea-rescuerunner.png",
+        "summary": "A compact rescue craft designed for professional operations in shallow, rocky and confined waters. Its protective hull and integrated rear platform support recovery, transfer and equipment transport.",
+        "specs": [
+          [
+            "Length",
+            "3.6 m"
+          ],
+          [
+            "Beam",
+            "1.5 m"
+          ],
+          [
+            "Load capacity",
+            "Approx. 365 kg"
+          ],
+          [
+            "Propulsion",
+            "Yamaha waterjet"
+          ]
+        ],
+        "features": [
+          "Integrated 1.5 m² rear platform",
+          "Protective rotomoulded polyethylene hull",
+          "Waterjet access hatch for maintenance"
+        ],
+        "source": "https://www.safeatsea.se/rescuerunner/"
+      },
+      {
+        "id": "guardrunner",
+        "name": "GuardRunner",
+        "type": "Patrol and professional rescue craft",
+        "image": "safe-at-sea-guardrunner.png",
+        "summary": "A RescueRunner-based platform configured for professional law-enforcement, surveillance and combat search-and-rescue requirements. Navigation, lighting and equipment-carrying options can be selected around the task.",
+        "specs": [
+          [
+            "Length",
+            "3.6 m"
+          ],
+          [
+            "Beam",
+            "1.5 m"
+          ],
+          [
+            "Load capacity",
+            "Approx. 365 kg"
+          ],
+          [
+            "Applications",
+            "Patrol / rescue / surveillance"
+          ]
+        ],
+        "features": [
+          "Protective polyethylene hull",
+          "Equipment rack and navigation options",
+          "Launch and recovery system choices"
+        ],
+        "source": "https://www.safeatsea.se/guardrunner/"
+      },
+      {
+        "id": "saferunner",
+        "name": "SafeRunner",
+        "type": "Beach and coastal rescue craft",
+        "image": "safe-at-sea-saferunner.png",
+        "summary": "A compact waterjet rescue craft with an integrated aft rescue platform. The design combines a stable working area with rigid or inflatable sponsons for beach rescue and close-range response.",
+        "specs": [
+          [
+            "Length",
+            "Approx. 3.5 m"
+          ],
+          [
+            "Beam",
+            "Approx. 1.6 m"
+          ],
+          [
+            "Load capacity",
+            "Approx. 325 kg"
+          ],
+          [
+            "Engine output",
+            "85 kW"
+          ]
+        ],
+        "features": [
+          "Integrated 1.25 m² rescue platform",
+          "Rigid or inflatable sponson options",
+          "Quick Load System option for equipment"
+        ],
+        "source": "https://www.safeatsea.se/saferunner/"
+      },
+      {
+        "id": "elecorunner",
+        "name": "ElEcoRunner",
+        "type": "Electric search-and-rescue craft",
+        "image": "safe-at-sea-elecorunner.jpeg",
+        "photo": true,
+        "summary": "A fully electric rescue craft based on the RescueRunner concept. Its quiet, exhaust-free powertrain offers an option for professional rescue, surveillance and transport on coastal and inland waters.",
+        "specs": [
+          [
+            "Powertrain",
+            "Fully electric"
+          ],
+          [
+            "Hull",
+            "Protective polyethylene"
+          ],
+          [
+            "Rear platform",
+            "1.5 m²"
+          ],
+          [
+            "Applications",
+            "Rescue / surveillance / transport"
+          ]
+        ],
+        "features": [
+          "Electric propulsion without local exhaust",
+          "Integrated rear rescue platform",
+          "Six watertight hull sections"
+        ],
+        "source": "https://www.safeatsea.se/elecorunner/"
+      }
+    ]
+  },
+  "categories": [
+    {
+      "id": "diving",
+      "name": "Diving Equipment",
+      "url": "diving-equipments.html",
+      "companies": [
+        "jfd",
+        "seacraft"
+      ],
+      "summary": "Explore JFD diving rebreathers and life-support systems, alongside Seacraft diver propulsion vehicles and underwater navigation.",
+      "image": "seacraft-future.png",
+      "tags": [
+        "Rebreathers",
+        "DPVs",
+        "Navigation"
+      ],
+      "product_count": 8
+    },
+    {
+      "id": "parachute",
+      "name": "Parachute Systems",
+      "url": "parachute-systems.html",
+      "companies": [
+        "fxc"
+      ],
+      "summary": "Explore FXC personnel parachutes and automatic activation devices, with individual specifications and key features.",
+      "image": "fxc-mc4.jpg",
+      "tags": [
+        "MC-4",
+        "T-10D",
+        "Activation devices"
+      ],
+      "product_count": 4
+    },
+    {
+      "id": "boats",
+      "name": "Inflatable Systems",
+      "url": "inflatable-boats.html",
+      "companies": [
+        "zodiac-nautic",
+        "safe-at-sea"
+      ],
+      "summary": "Explore Zodiac Nautic inflatable boats and RIBs, alongside Safe at Sea rescue craft and support systems.",
+      "image": "zodiac-open55.webp",
+      "tags": [
+        "Inflatable boats",
+        "RIBs",
+        "Rescue craft"
+      ],
+      "product_count": 8
+    }
+  ],
+  "company_profiles": {
+    "jfd": {
+      "name": "JFD",
+      "url": "jfd.html",
+      "logo": "jfd-logo.jpg",
+      "summary": "Diving rebreathers and underwater life-support systems.",
+      "category": "diving"
+    },
+    "seacraft": {
+      "name": "Seacraft",
+      "url": "seacraft.html",
+      "logo": "seacraft-logo.png",
+      "summary": "Diver propulsion vehicles and underwater navigation.",
+      "category": "diving"
+    },
+    "fxc": {
+      "name": "FXC",
+      "url": "fxc.html",
+      "logo": "fxc-logo.jpg",
+      "summary": "Personnel parachutes and automatic activation devices.",
+      "category": "parachute"
+    },
+    "zodiac-nautic": {
+      "name": "Zodiac Nautic",
+      "url": "zodiac-nautic.html",
+      "logo": "zodiac-logo.jpg",
+      "summary": "Inflatable boats and rigid inflatable boats (RIBs).",
+      "category": "boats"
+    },
+    "safe-at-sea": {
+      "name": "Safe at Sea",
+      "url": "safe-at-sea.html",
+      "logo": "safe-at-sea-logo.jpeg",
+      "summary": "Compact rescue craft and operator support systems.",
+      "category": "boats"
+    }
+  }
+}

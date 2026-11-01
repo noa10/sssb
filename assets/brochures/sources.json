@@ -1,0 +1,37 @@
+{
+  "jfd-company-overview.pdf": {
+    "publisher": "Semenanjung Selatan Sdn Bhd",
+    "type": "SSSB company and product overview",
+    "prepared": "2026-11-01",
+    "sources": [
+      "https://www.james-fisher.com/divisions/defence/",
+      "https://www.james-fisher.com/divisions/defence/defence-diving/",
+      "https://www.james-fisher.com/divisions/defence/commercial-diving-and-hyperbaric-equipment/"
+    ]
+  },
+  "fxc-company-overview.pdf": {
+    "publisher": "Semenanjung Selatan Sdn Bhd",
+    "type": "SSSB company and product overview",
+    "prepared": "2026-11-01",
+    "sources": [
+      "https://www.fxcguardian.com/",
+      "https://www.fxcguardian.com/products/",
+      "https://www.fxcguardian.com/product-category/parachutes-systems/"
+    ]
+  },
+  "seacraft-product-catalogue.pdf": {
+    "publisher": "Seacraft / Marine Tech S.A.",
+    "type": "Manufacturer catalogue",
+    "source": "https://seacraft.eu/wp-content/uploads/2023/03/seacraft-katalog-2022.pdf"
+  },
+  "zodiac-nautic-brochure.pdf": {
+    "publisher": "Zodiac Nautic",
+    "type": "Manufacturer brochure",
+    "source": "https://www.zodiac-nautic.com/wp-content/uploads/2025/09/WEB-BRAND-BROCHURE-ZODIAC-UK_2025.pdf"
+  },
+  "safe-at-sea-rescuerunner-brochure.pdf": {
+    "publisher": "Safe at Sea",
+    "type": "Manufacturer leaflet",
+    "source": "https://www.safeatsea.se/wp-content/uploads/RescueRunner-Leaflet-2019.pdf"
+  }
+}

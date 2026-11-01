@@ -1,36 +1,234 @@
 {
   "source": "https://www.semenanjungselatan.com/",
-  "note": "Company-owned product, facility and team imagery supplied by Semenanjung Selatan Sdn Bhd. Localized for the redesign; no third-party stock photography used.",
+  "note": "Existing product, facility and team imagery was supplied by Semenanjung Selatan Sdn Bhd. Company logos and additional manufacturer imagery are attributed per asset. Trademarks belong to their respective owners.",
   "assets": [
-    { "file": "hero-mission.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hero-sssb-web-profile_3.jpg" },
-    { "file": "about-company.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/about-pic-1.jpg" },
-    { "file": "about-team.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/about-photo-pic-pg_5.jpg" },
-    { "file": "card-parachute.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-8.jpg" },
-    { "file": "card-diving.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-6.jpg" },
-    { "file": "card-boats.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-7.jpg" },
-    { "file": "card-trading.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-5.jpg" },
-    { "file": "proj-parachute.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/fxc-prod-pg.jpg" },
-    { "file": "proj-tactical.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/capewell-prod-pg.jpg" },
-    { "file": "proj-cargo.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/ballenger-prod-pg.jpg" },
-    { "file": "proj-diving.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/divex-prod-pg.jpg" },
-    { "file": "proj-navigation.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/sahrk-marine-prod-pg.jpg" },
-    { "file": "proj-dpv.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/seacraft-dpv.jpg" },
-    { "file": "proj-zodiac.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/zodiac_nautic-prod-pg.jpg" },
-    { "file": "proj-aka.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/aka-marine-boats_2.jpg" },
-    { "file": "proj-ufast.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/ufast-prod-pg.jpg" },
-    { "file": "proj-typev.png", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/03/type-v-airdrop.png" },
-    { "file": "proj-kirby.png", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/kirby-morgan.png" },
-    { "file": "proj-jwa.png", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/jwa.png" },
-    { "file": "contact-office.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/contact-pic1-pg.jpg" },
-    { "file": "policy-operations.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/photo_2021-03-25-21.46.03.jpeg" },
-    { "file": "team-shuhaimi.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hj-shuhaimi.jpg" },
-    { "file": "team-malek.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/kept-malek.jpg" },
-    { "file": "team-yusuf.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hj-yusuf.jpg" },
-    { "file": "team-limbach.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/mr-johnlimbach.jpg" },
-    { "file": "team-azizan.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/datuk-azizan.jpg" },
-    { "file": "team-ghani.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/dato-ghani.jpg" },
-    { "file": "team-zolkopli.jpg", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/datuk-zolkopli.jpg" },
-    { "file": "sssb-logo.png", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/sssb-logo-landscape-200pxs.png" },
-    { "file": "favicon.png", "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/cropped-sssb-logo-512pxss-32x32.png" }
+    {
+      "file": "hero-mission.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hero-sssb-web-profile_3.jpg"
+    },
+    {
+      "file": "about-company.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/about-pic-1.jpg"
+    },
+    {
+      "file": "about-team.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/about-photo-pic-pg_5.jpg"
+    },
+    {
+      "file": "card-parachute.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-8.jpg"
+    },
+    {
+      "file": "card-diving.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-6.jpg"
+    },
+    {
+      "file": "card-boats.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-7.jpg"
+    },
+    {
+      "file": "card-trading.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/home-pic-prod-5.jpg"
+    },
+    {
+      "file": "proj-parachute.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/fxc-prod-pg.jpg"
+    },
+    {
+      "file": "proj-tactical.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/capewell-prod-pg.jpg"
+    },
+    {
+      "file": "proj-cargo.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/ballenger-prod-pg.jpg"
+    },
+    {
+      "file": "proj-diving.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/divex-prod-pg.jpg"
+    },
+    {
+      "file": "proj-navigation.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/sahrk-marine-prod-pg.jpg"
+    },
+    {
+      "file": "proj-dpv.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/seacraft-dpv.jpg"
+    },
+    {
+      "file": "proj-zodiac.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/zodiac_nautic-prod-pg.jpg"
+    },
+    {
+      "file": "proj-aka.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/aka-marine-boats_2.jpg"
+    },
+    {
+      "file": "proj-ufast.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/ufast-prod-pg.jpg"
+    },
+    {
+      "file": "proj-typev.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/03/type-v-airdrop.png"
+    },
+    {
+      "file": "proj-kirby.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/kirby-morgan.png"
+    },
+    {
+      "file": "proj-jwa.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/jwa.png"
+    },
+    {
+      "file": "contact-office.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/contact-pic1-pg.jpg"
+    },
+    {
+      "file": "policy-operations.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/photo_2021-03-25-21.46.03.jpeg"
+    },
+    {
+      "file": "team-shuhaimi.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hj-shuhaimi.jpg"
+    },
+    {
+      "file": "team-malek.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/kept-malek.jpg"
+    },
+    {
+      "file": "team-yusuf.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/hj-yusuf.jpg"
+    },
+    {
+      "file": "team-limbach.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/mr-johnlimbach.jpg"
+    },
+    {
+      "file": "team-azizan.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/datuk-azizan.jpg"
+    },
+    {
+      "file": "team-ghani.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/dato-ghani.jpg"
+    },
+    {
+      "file": "team-zolkopli.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/datuk-zolkopli.jpg"
+    },
+    {
+      "file": "sssb-logo.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/sssb-logo-landscape-200pxs.png"
+    },
+    {
+      "file": "favicon.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/03/cropped-sssb-logo-512pxss-32x32.png"
+    },
+    {
+      "file": "companies/jfd-logo.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/jfd.jpg"
+    },
+    {
+      "file": "companies/seacraft-logo.png",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/seacraft-logo-300x90.png"
+    },
+    {
+      "file": "companies/fxc-logo.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/fxc.jpg"
+    },
+    {
+      "file": "companies/zodiac-logo.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/zodiac.jpg"
+    },
+    {
+      "file": "companies/safe-at-sea-logo.jpeg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2024/02/safe-at-sea-logo-300x300.jpeg"
+    },
+    {
+      "file": "companies/jfd-products.jpg",
+      "source": "https://www.semenanjungselatan.com/wp-content/uploads/2021/02/jfdg-prod-pg.jpg"
+    },
+    {
+      "file": "companies/safe-at-sea-rescuerunner.png",
+      "source": "https://www.safeatsea.se/wp-content/uploads/rescuerunner-product-unmounted-600x474.png"
+    },
+    {
+      "file": "products/seacraft-future.png",
+      "source": "https://seacraft.eu/wp-content/uploads/2020/06/future-product-render-main.png"
+    },
+    {
+      "file": "products/seacraft-ghost.png",
+      "source": "https://seacraft.eu/wp-content/uploads/2020/06/ghost-product-render-main.png"
+    },
+    {
+      "file": "products/seacraft-go.png",
+      "source": "https://seacraft.eu/wp-content/uploads/2020/06/go-product-render.png"
+    },
+    {
+      "file": "products/seacraft-enc3-pro.png",
+      "source": "https://seacraft.eu/wp-content/uploads/2023/06/meet-enc3pro-main-1-610x458.png"
+    },
+    {
+      "file": "products/safe-at-sea-guardrunner.png",
+      "source": "https://www.safeatsea.se/wp-content/uploads/rr-kbv-600x300.png"
+    },
+    {
+      "file": "products/safe-at-sea-saferunner.png",
+      "source": "https://www.safeatsea.se/wp-content/uploads/saferunner__-600x447.png"
+    },
+    {
+      "file": "products/safe-at-sea-elecorunner.jpeg",
+      "source": "https://www.safeatsea.se/wp-content/uploads/ElEcoRunner_1-600x450.jpeg"
+    },
+    {
+      "file": "products/zodiac-open55.webp",
+      "source": "https://www.zodiac-nautic.com/wp-content/uploads/2022/06/BOAT-PAGE-OPEN-5.5-1366x517-c-center.webp"
+    },
+    {
+      "file": "products/zodiac-open65.webp",
+      "source": "https://www.zodiac-nautic.com/wp-content/uploads/2022/06/BOAT-PAGE-OPEN-6.5-1366x517-c-center.webp"
+    },
+    {
+      "file": "products/zodiac-pro55.webp",
+      "source": "https://www.zodiac-nautic.com/wp-content/uploads/2022/06/BOAT-PAGE-PRO-5.5-1366x517-c-center.webp"
+    },
+    {
+      "file": "products/zodiac-medline68.webp",
+      "source": "https://www.zodiac-nautic.com/wp-content/uploads/2022/06/BOAT-PAGE-MEDLINE-6.8-1366x517-c-center.webp"
+    },
+    {
+      "file": "products/jfd-shadow.jpg",
+      "source": "https://www.james-fisher.com/media/ys2ffpxr/shadow.jpg?height=452&quality=95&rxy=0.4949874686716792%2C0.31570283343293004&width=720"
+    },
+    {
+      "file": "products/jfd-enforcer.jpg",
+      "source": "https://www.james-fisher.com/media/g4wogzuf/_dsf0191-shadow-enforcer_1920px.jpg?height=452&quality=95&rxy=0.6352705181481126%2C0.05377421000040446&width=720"
+    },
+    {
+      "file": "products/jfd-stealth-mr.jpg",
+      "source": "https://www.james-fisher.com/media/pixbgoz0/stealth-mr.jpg?height=452&quality=95&rxy=0.5068702290076336%2C0.18014184397163122&width=720"
+    },
+    {
+      "file": "products/jfd-stealth-sc.jpg",
+      "source": "https://www.james-fisher.com/media/ikzlzyt5/stealth-sc.jpg?height=452&quality=95&rxy=0.5%2C0.5&width=720"
+    },
+    {
+      "file": "products/fxc-mc4.jpg",
+      "source": "https://www.fxcguardian.com/wp-content/uploads/2020/03/JGSDF_parachuteMC-4-600x398.jpg"
+    },
+    {
+      "file": "products/fxc-t10d.webp",
+      "source": "https://www.fxcguardian.com/wp-content/uploads/2020/02/fallschime-4773221-scaled-600x401.jpg.webp"
+    },
+    {
+      "file": "products/fxc-model-2101.jpg",
+      "source": "https://www.fxcguardian.com/wp-content/uploads/2020/03/IMG_9518RV-600x400.jpg"
+    },
+    {
+      "file": "products/fxc-model-12000.jpg",
+      "source": "https://www.fxcguardian.com/wp-content/uploads/2020/03/IMG_9636-scaled-600x900.jpg"
+    },
+    {
+      "file": "products/safe-at-sea-rescuerunner.png",
+      "source": "https://www.safeatsea.se/wp-content/uploads/rescuerunner-product-unmounted-600x474.png"
+    }
   ]
 }
