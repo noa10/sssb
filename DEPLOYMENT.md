@@ -83,6 +83,18 @@ node --env-file=/test.semenanjungselatan.com/.env /test.semenanjungselatan.com/s
 
 Use the Node.js 22 executable path provided by the host if `node` in scheduled tasks resolves to another version. Keep the environment file outside `public/` and do not put credentials in the scheduled command. Check Plesk's task output and alert on failures: neither a stopped process nor a failed scheduled job can delete messages until it runs successfully. Git deployment does not create scheduled tasks.
 
+## Quotation requests
+
+Apply `006_quotation_requests.sql` to the intended database before deploying the quotation feature. It depends on the earlier conversation and customer-account migrations. Run it with the application's database environment or include it with `npm run migrate`:
+
+```bash
+node scripts/migrate.js 006_quotation_requests.sql
+```
+
+Signed-in customers can use **Request quotation** during an active chat. The form uses their account contact details, the published product catalogue and relevant manufacturer-specific details. It refreshes the catalogue when opened; if the catalogue cannot load, customers can retry or enter an Other request. A selected catalogue product is checked again when the request is sent, and customers are asked to review the list if it has changed or is no longer published. Existing requests retain their saved product and contact details. The team reviews each structured request in the linked **Enquiries** detail; the existing enquiry status remains the staff workflow. A confirmation is added to the transcript and the enquiry's update time changes. No email or manufacturer notification is sent automatically.
+
+The request stores a snapshot of the account contact details and survives the 30-day chat-message purge. Deleting its enquiry permanently removes the associated requests. If the migration is missing, existing enquiry details continue to load but new quotation requests cannot be submitted. Update the published privacy notice and retention procedures to cover these records.
+
 ## Import the website catalogue
 
 The importer converts `public/assets/data/products.json` into individual published product entries and company profiles, with source attribution. It does not import brochure PDFs, prices, stock, or unverified company certifications. Review the catalogue and manufacturer sources before exposing the assistant publicly; specifications may change and the catalogue's verification date applies to the entire catalogue.
@@ -156,7 +168,7 @@ node scripts/seed-company-knowledge.js --apply
 
 Without `--apply` the command only previews the entries. It inserts each entry as published and skips any title that already exists, so it does not overwrite staff edits. Review the content and publication status in the dashboard afterwards. The entries deliberately exclude personal mobile numbers and direct staff email addresses; use the general office contact details. Re-running the command only adds missing titles.
 
-The Knowledge editor can permanently delete non-product content, including its search chunks and, for a PDF, the stored file. Product-linked knowledge cannot be deleted there; delete the product in **Products** instead. The Enquiries detail panel can permanently delete an enquiry, which removes the conversation, transcript, contact details and the customer's link to it. Both actions ask for confirmation and cannot be undone.
+The Knowledge editor can permanently delete non-product content, including its search chunks and, for a PDF, the stored file. Product-linked knowledge cannot be deleted there; delete the product in **Products** instead. The Enquiries detail panel can permanently delete an enquiry, which removes the conversation, transcript, quotation requests, contact details and the customer's link to it. Both actions ask for confirmation and cannot be undone.
 
 ## Local development
 

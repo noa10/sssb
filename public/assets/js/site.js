@@ -407,8 +407,37 @@
       '        <textarea id="sssb-chat-message" name="message" rows="1" placeholder="Ask a question…" title="Press Enter to send. Press Shift+Enter for a new line." required></textarea>',
       '        <button class="chat-send" type="submit" aria-label="Send message"><svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 4 16 8-16 8 2-8-2-8Zm2 8h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>',
       '      </form>',
-      '      <button class="chat-end" type="button">End chat</button>',
+      '      <div class="chat-conversation-actions"><button class="chat-quotation-open" type="button" aria-controls="sssb-chat-quotation" aria-expanded="false">Request quotation</button><button class="chat-end" type="button">End chat</button></div>',
       '    </div>',
+      '    <section class="chat-quotation" id="sssb-chat-quotation" aria-labelledby="sssb-quotation-title" hidden>',
+      '      <h3 class="chat-form-heading" id="sssb-quotation-title" tabindex="-1">Request a quotation</h3>',
+      '      <p class="chat-quotation-intro">Tell us what you need. Our team will use your account details to follow up.</p>',
+      '      <div class="chat-quotation-contact"><div><span>Contact</span><strong class="chat-quotation-name"></strong><span class="chat-quotation-email"></span><span class="chat-quotation-phone"></span><span class="chat-quotation-company"></span></div><button class="chat-quotation-edit" type="button">Edit account details</button></div>',
+      '      <form class="chat-quotation-form">',
+      '        <div class="chat-fields">',
+      '          <label for="sssb-quotation-product">Product or manufacturer <strong>(required)</strong><select id="sssb-quotation-product" name="product" required></select></label>',
+      '          <p class="chat-quotation-status chat-quotation-catalogue-status" role="status" aria-live="polite" hidden></p>',
+      '          <button class="chat-quotation-back chat-quotation-catalogue-retry" type="button" hidden>Retry loading products</button>',
+      '          <label class="chat-quotation-other" for="sssb-quotation-other" hidden>Product or service <strong>(required)</strong><input id="sssb-quotation-other" name="other" maxlength="200"></label>',
+      '          <label class="chat-quotation-jfd" for="sssb-quotation-enquiry-type" hidden>Area of interest <strong>(required)</strong><select id="sssb-quotation-enquiry-type" name="enquiryType"><option value="">Select an area</option><option value="commercial-diving">Commercial diving and hyperbaric equipment</option><option value="defence-diving">Defence diving</option><option value="safety-systems">Safety critical systems &amp; communications</option><option value="service-maintenance">Service, inspection, maintenance and training</option><option value="submarine-rescue">Submarine escape and rescue</option><option value="submarine-platforms">Submarine platforms</option><option value="tactical-delivery">Tactical delivery vehicles</option></select></label>',
+      '          <label for="sssb-quotation-message">Request details <span class="chat-quotation-message-required">(optional)</span><textarea id="sssb-quotation-message" name="message" maxlength="2000" rows="3" placeholder="Tell us what you need and how it will be used."></textarea></label>',
+      '          <label for="sssb-quotation-quantity">Quantity <span>(optional)</span><input id="sssb-quotation-quantity" name="quantity" type="number" min="1" max="100000" step="1" inputmode="numeric"></label>',
+      '          <label for="sssb-quotation-date">Required by <span>(optional)</span><input id="sssb-quotation-date" name="requiredBy" type="date"></label>',
+      '          <label for="sssb-quotation-delivery">Delivery location <span>(optional)</span><input id="sssb-quotation-delivery" name="deliveryLocation" maxlength="200"></label>',
+      '          <label for="sssb-quotation-route">Procurement route <span>(optional)</span><select id="sssb-quotation-route" name="procurementRoute"><option value="unsure">Not sure</option><option value="government">Government procurement</option><option value="direct">Direct purchase</option><option value="support">Support request</option></select></label>',
+      '          <label class="chat-quotation-country" for="sssb-quotation-country" hidden>Country <strong>(required)</strong><input id="sssb-quotation-country" name="country" autocomplete="country-name" maxlength="100"></label>',
+      '          <div class="chat-quotation-zodiac chat-fields" hidden>',
+      '            <label for="sssb-quotation-city">City <strong>(required)</strong><input id="sssb-quotation-city" name="city" autocomplete="address-level2" maxlength="100"></label>',
+      '            <label for="sssb-quotation-postal">Postal code <strong>(required)</strong><input id="sssb-quotation-postal" name="postalCode" autocomplete="postal-code" maxlength="30"></label>',
+      '            <label for="sssb-quotation-navigation">Navigation area <strong>(required)</strong><input id="sssb-quotation-navigation" name="navigationArea" maxlength="100"></label>',
+      '            <label for="sssb-quotation-region">State, region or department <span>(optional)</span><input id="sssb-quotation-region" name="region" autocomplete="address-level1" maxlength="100"><small>For the USA or France, please include your state or department.</small></label>',
+      '          </div>',
+      '        </div>',
+      '        <p class="chat-quotation-retention">Your quotation request and contact details remain available to our team after chat messages are deleted at 30 days.</p>',
+      '        <p class="chat-quotation-status" role="status" aria-live="polite" hidden></p>',
+      '        <div class="chat-quotation-actions"><button class="btn btn--primary chat-submit" type="submit">Send quotation request</button><button class="chat-quotation-back" type="button">Back to chat</button></div>',
+      '      </form>',
+      '    </section>',
       '    <details class="chat-contact"><summary>Contact our team</summary><div class="chat-contact-links">',
       '      <a class="chat-email" href="mailto:info@semenanjungselatan.com">info@semenanjungselatan.com</a>',
       '      <a class="chat-phone" href="tel:+6072352330">+60 7-235 2330</a>',
@@ -472,6 +501,20 @@
     var messageInput = widget.querySelector("#sssb-chat-message");
     var sendButton = messageForm.querySelector('button[type="submit"]');
     var endButton = widget.querySelector(".chat-end");
+    var quotationButton = widget.querySelector(".chat-quotation-open");
+    var quotationView = widget.querySelector(".chat-quotation");
+    var quotationForm = widget.querySelector(".chat-quotation-form");
+    var quotationTitle = widget.querySelector("#sssb-quotation-title");
+    var quotationProduct = widget.querySelector("#sssb-quotation-product");
+    var quotationCatalogueStatus = widget.querySelector(".chat-quotation-catalogue-status");
+    var quotationCatalogueRetry = widget.querySelector(".chat-quotation-catalogue-retry");
+    var quotationSubmit = quotationForm.querySelector('button[type="submit"]');
+    var quotationOther = widget.querySelector("#sssb-quotation-other");
+    var quotationEnquiryType = widget.querySelector("#sssb-quotation-enquiry-type");
+    var quotationMessage = widget.querySelector("#sssb-quotation-message");
+    var quotationCountry = widget.querySelector("#sssb-quotation-country");
+    var quotationStatus = widget.querySelector(".chat-quotation-form > .chat-quotation-status");
+    var quotationBack = widget.querySelector(".chat-quotation-actions .chat-quotation-back");
     var emailLink = widget.querySelector(".chat-email");
     var whatsappLink = widget.querySelector(".chat-whatsapp");
     var isOpen = false;
@@ -503,6 +546,13 @@
     var seenAssistantIds = Object.create(null);
     var animateIncoming = false;
     var activeReveal = null;
+    var quotationOpen = false;
+    var returnToQuotation = false;
+    var quotationRequestId = null;
+    var quotationPayloadSignature = "";
+    var quotationCatalogue = {};
+    var quotationCatalogueLoading = false;
+    var quotationCatalogueSequence = 0;
 
     var catalogue = {
       "jfd": "JFD products",
@@ -535,15 +585,17 @@
     document.addEventListener("sssb:catalogue", function (event) {
       var detail = event.detail;
       if (!detail || !Array.isArray(detail.companies)) return;
+      var published = {};
       detail.companies.forEach(function (company) {
         if (!company || typeof company.key !== "string") return;
-        catalogue[company.key] = company.name + " products";
+        published[company.key] = company.name + " products";
         (company.products || []).forEach(function (product) {
           if (product && typeof product.key === "string") {
-            catalogue[company.key + "/" + product.key] = company.name + " " + product.name;
+            published[company.key + "/" + product.key] = company.name + " " + product.name;
           }
         });
       });
+      catalogue = published;
       if (contextApplied && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
         var enquiry = catalogueEnquiry();
         if (enquiry) messageInput.value = enquiry;
@@ -559,6 +611,184 @@
       return Object.prototype.hasOwnProperty.call(catalogue, key)
         ? "I would like to enquire about " + catalogue[key] + "."
         : "";
+    }
+
+    function setQuotationStatus(text, isError) {
+      quotationStatus.textContent = text || "";
+      quotationStatus.hidden = !text;
+      quotationStatus.classList.toggle("is-error", !!isError);
+    }
+
+    function setQuotationCatalogueStatus(text, isError) {
+      quotationCatalogueStatus.textContent = text || "";
+      quotationCatalogueStatus.hidden = !text;
+      quotationCatalogueStatus.classList.toggle("is-error", !!isError);
+      quotationCatalogueRetry.hidden = !isError;
+    }
+
+    function refreshQuotationOptions() {
+      var previous = quotationProduct.value;
+      quotationProduct.replaceChildren(new Option("Select a product or manufacturer", ""));
+      Object.keys(quotationCatalogue).filter(function (key) { return key.indexOf("/") === -1; }).forEach(function (company) {
+        var group = document.createElement("optgroup");
+        group.label = quotationCatalogue[company].replace(/ products$/, "");
+        group.appendChild(new Option("General enquiry", company));
+        Object.keys(quotationCatalogue).filter(function (key) { return key.indexOf(company + "/") === 0; }).forEach(function (key) {
+          group.appendChild(new Option(quotationCatalogue[key], key));
+        });
+        quotationProduct.appendChild(group);
+      });
+      quotationProduct.appendChild(new Option("Other / not sure", "other"));
+      quotationProduct.value = previous || "";
+      if (quotationProduct.selectedIndex < 0) quotationProduct.value = "";
+      syncQuotationFields();
+    }
+
+    async function loadQuotationCatalogue(shouldPrefill) {
+      var sequence = ++quotationCatalogueSequence;
+      var previous = quotationProduct.value;
+      var previousName = quotationCatalogue[previous];
+      quotationCatalogueLoading = true;
+      setQuotationCatalogueStatus("Loading products…", false);
+      updateControls();
+      try {
+        var data = await requestJSON("/api/catalogue");
+        if (!data || !Array.isArray(data.companies)) throw new Error("Unexpected catalogue response");
+        var published = Object.create(null);
+        var productCount = 0;
+        data.companies.forEach(function (company) {
+          if (!company || typeof company.key !== "string" || typeof company.name !== "string" || !Array.isArray(company.products)) {
+            throw new Error("Unexpected catalogue company");
+          }
+          published[company.key] = company.name + " products";
+          company.products.forEach(function (product) {
+            if (!product || typeof product.key !== "string" || typeof product.name !== "string") throw new Error("Unexpected catalogue product");
+            published[company.key + "/" + product.key] = company.name + " " + product.name;
+            productCount += 1;
+          });
+        });
+        if (sequence !== quotationCatalogueSequence) return;
+        quotationCatalogue = published;
+        refreshQuotationOptions();
+        if (previous && previous !== "other" && !quotationProduct.value) {
+          setQuotationCatalogueStatus("Your previous selection is no longer available. Choose another product or Other / not sure.", false);
+        } else if (previousName && previousName !== quotationCatalogue[previous]) {
+          setQuotationCatalogueStatus("Your selected product has changed. Please review it before sending your request.", false);
+        } else if (!productCount) {
+          setQuotationCatalogueStatus("No products are currently published. Choose a manufacturer for a general enquiry or select Other / not sure.", false);
+        } else {
+          setQuotationCatalogueStatus("", false);
+        }
+        if (!previous && shouldPrefill) prefillQuotationProduct();
+      } catch (error) {
+        if (sequence !== quotationCatalogueSequence) return;
+        quotationCatalogue = {};
+        refreshQuotationOptions();
+        setQuotationCatalogueStatus("The product list could not be loaded. Retry or choose Other / not sure.", true);
+      } finally {
+        if (sequence === quotationCatalogueSequence) {
+          quotationCatalogueLoading = false;
+          updateControls();
+          if (quotationOpen && isOpen && document.activeElement === quotationTitle && !quotationProduct.disabled) quotationProduct.focus();
+        }
+      }
+    }
+
+    function quotationCompany() {
+      return quotationProduct.value && quotationProduct.value !== "other" ? quotationProduct.value.split("/")[0] : "";
+    }
+
+    function syncQuotationFields() {
+      var company = quotationCompany();
+      var unavailable = busy || loading || stale || hasPendingMessage();
+      quotationProduct.disabled = unavailable || quotationCatalogueLoading;
+      quotationSubmit.disabled = unavailable || quotationCatalogueLoading;
+      quotationCatalogueRetry.disabled = unavailable || quotationCatalogueLoading;
+      var isOther = quotationProduct.value === "other";
+      var isJfd = company === "jfd";
+      var isZodiac = company === "zodiac-nautic";
+      var needsCountry = isZodiac || company === "safe-at-sea";
+      var needsMessage = isJfd || company === "fxc" || company === "safe-at-sea";
+      widget.querySelector(".chat-quotation-other").hidden = !isOther;
+      quotationOther.required = isOther;
+      quotationOther.disabled = unavailable || !isOther;
+      widget.querySelector(".chat-quotation-jfd").hidden = !isJfd;
+      quotationEnquiryType.required = isJfd;
+      quotationEnquiryType.disabled = unavailable || !isJfd;
+      quotationMessage.required = needsMessage;
+      widget.querySelector(".chat-quotation-message-required").textContent = needsMessage ? "(required)" : "(optional)";
+      widget.querySelector(".chat-quotation-country").hidden = !needsCountry;
+      quotationCountry.required = needsCountry;
+      quotationCountry.disabled = unavailable || !needsCountry;
+      var zodiacFields = widget.querySelector(".chat-quotation-zodiac");
+      zodiacFields.hidden = !isZodiac;
+      zodiacFields.querySelectorAll("input").forEach(function (input) {
+        input.disabled = unavailable || !isZodiac;
+        input.required = isZodiac && input.name !== "region";
+      });
+    }
+
+    function fillQuotationContact() {
+      ["name", "email", "phone", "company"].forEach(function (field) {
+        widget.querySelector(".chat-quotation-" + field).textContent = customer && customer[field] || "Not provided";
+      });
+    }
+
+    function prefillQuotationProduct() {
+      if (quotationProduct.value) return;
+      if (document.body.dataset.page === "contact") {
+        var params = new URLSearchParams(window.location.search);
+        var company = params.get("company") || "";
+        var product = params.get("product") || "";
+        var key = company + (product ? "/" + product : "");
+        if (Object.prototype.hasOwnProperty.call(quotationCatalogue, key)) quotationProduct.value = key;
+      }
+      if (!quotationProduct.value) {
+        for (var index = currentMessages.length - 1; index >= 0 && !quotationProduct.value; index -= 1) {
+          var references = currentMessages[index].products;
+          if (!Array.isArray(references)) continue;
+          references.some(function (reference) {
+            var match = Object.keys(quotationCatalogue).find(function (key) {
+              return key.indexOf("/") !== -1 && reference && quotationCatalogue[key] === reference.name;
+            });
+            if (match) quotationProduct.value = match;
+            return !!match;
+          });
+        }
+      }
+      syncQuotationFields();
+    }
+
+    function resetQuotation() {
+      quotationOpen = false;
+      returnToQuotation = false;
+      quotationForm.reset();
+      quotationRequestId = null;
+      quotationPayloadSignature = "";
+      quotationCatalogueSequence += 1;
+      quotationCatalogueLoading = false;
+      quotationCatalogue = {};
+      setQuotationStatus("", false);
+      setQuotationCatalogueStatus("", false);
+      refreshQuotationOptions();
+    }
+
+    function openQuotation() {
+      if (busy || loading || stale || hasPendingMessage() || !customer || active !== true) return;
+      closeAccountMenu(false);
+      fillQuotationContact();
+      quotationOpen = true;
+      setStatus("", false);
+      updateControls();
+      quotationTitle.focus();
+      loadQuotationCatalogue(!quotationProduct.value);
+    }
+
+    function closeQuotation(restoreFocus) {
+      if (busy || loading) return;
+      quotationOpen = false;
+      updateControls();
+      if (restoreFocus && isOpen) quotationButton.focus();
     }
 
     function setStatus(text, isError, visuallyQuiet) {
@@ -597,10 +827,12 @@
       var accountBusy = busy || loading || stale || hasPendingMessage();
       var completeProfile = hasSavedDetails();
       var showProfile = !!customer && (profileMode || (active === false && !completeProfile));
-      panel.classList.toggle("has-conversation", active === true && !accountMode && !showProfile);
+      if (!customer || active !== true || accountMode || showProfile) quotationOpen = false;
+      panel.classList.toggle("has-conversation", active === true && !accountMode && !showProfile && !quotationOpen);
       panel.classList.toggle("has-account-view", !!accountMode || showProfile);
-      welcome.hidden = !!accountMode || showProfile || active === true;
-      accountArea.hidden = !!customer && !showProfile;
+      panel.classList.toggle("has-quotation-view", quotationOpen);
+      welcome.hidden = !!accountMode || showProfile || active === true || quotationOpen;
+      accountArea.hidden = (!!customer && !showProfile) || quotationOpen;
       accountGuest.hidden = !!customer || !!accountMode;
       guestExisting.hidden = !guestConversation || !!customer;
       guestEnd.disabled = accountBusy;
@@ -627,8 +859,14 @@
       profileHelp.hidden = completeProfile || active === true;
       profileCancel.hidden = !completeProfile && active === false;
       profileForm.querySelectorAll("input,button").forEach(function (control) { control.disabled = accountBusy; });
-      startForm.hidden = !customer || active !== false || !!accountMode || showProfile;
-      conversation.hidden = !customer || active !== true || !!accountMode || showProfile;
+      startForm.hidden = !customer || active !== false || !!accountMode || showProfile || quotationOpen;
+      conversation.hidden = !customer || active !== true || !!accountMode || showProfile || quotationOpen;
+      quotationView.hidden = !quotationOpen;
+      quotationButton.disabled = accountBusy || active !== true;
+      quotationButton.setAttribute("aria-expanded", String(quotationOpen));
+      widget.querySelector(".chat-quotation-edit").disabled = accountBusy;
+      quotationForm.querySelectorAll("input,select,textarea,button").forEach(function (control) { control.disabled = accountBusy; });
+      syncQuotationFields();
       startButton.disabled = busy || loading || stale;
       sendButton.disabled = busy || loading || stale || hasPendingMessage();
       messageInput.disabled = busy || loading || stale || hasPendingMessage();
@@ -833,9 +1071,10 @@
 
     async function requestJSON(url, options) {
       var timeout = null;
-      var controller = url === "/api/chat/current" ? new AbortController() : null;
+      var catalogueRequest = url === "/api/catalogue";
+      var controller = url === "/api/chat/current" || catalogueRequest ? new AbortController() : null;
       if (controller) {
-        timeout = window.setTimeout(function () { controller.abort(); }, 15000);
+        timeout = window.setTimeout(function () { controller.abort(); }, catalogueRequest ? 5000 : 15000);
       }
       try {
         var settings = Object.assign({
@@ -933,6 +1172,7 @@
         }
         var previousCustomer = customer;
         customer = data.customer || null;
+        if (previousCustomer && (!customer || previousCustomer.email !== customer.email)) resetQuotation();
         guestConversation = data.guestConversation || null;
         if (customer) {
           accountMode = null;
@@ -952,6 +1192,7 @@
         if (active === true && !data.active) startForm.querySelector('[name="consent"]').checked = false;
         var nextConversationId = data.active ? String(data.conversation.id) : null;
         if (nextConversationId !== conversationId) {
+          resetQuotation();
           messageSignature = "";
           cancelReveal();
           seenAssistantIds = Object.create(null);
@@ -1221,11 +1462,10 @@
         event.preventDefault();
         event.stopPropagation();
         if (accountMenuOpen) closeAccountMenu(true);
+        else if (quotationOpen) closeQuotation(true);
         else if (accountMode) setAccountMode(null);
         else if (profileMode && hasSavedDetails()) {
-          profileMode = false;
-          updateControls();
-          accountToggle.focus();
+          leaveProfile();
         } else if (isFullscreen) setFullscreen(false);
         else closePanel();
         return;
@@ -1286,6 +1526,7 @@
     }
 
     function clearChatView() {
+      resetQuotation();
       active = null;
       conversationId = null;
       currentMessages = [];
@@ -1431,21 +1672,31 @@
       finishOperation();
     });
 
+    function leaveProfile() {
+      profileMode = false;
+      quotationOpen = returnToQuotation && !!customer && active === true;
+      returnToQuotation = false;
+      if (quotationOpen) fillQuotationContact();
+      updateControls();
+      if (isOpen) (quotationOpen ? quotationProduct : accountToggle).focus();
+    }
+
     accountProfile.addEventListener("click", function () {
       if (busy || loading || stale || hasPendingMessage() || !customer) return;
       closeAccountMenu(false);
+      returnToQuotation = quotationOpen;
+      quotationOpen = false;
       fillProfileForm();
       profileMode = true;
       setStatus("", false);
       updateControls();
       profileName.focus();
     });
+    widget.querySelector(".chat-quotation-edit").addEventListener("click", function () { accountProfile.click(); });
     profileCancel.addEventListener("click", function () {
       if (busy || loading || stale) return;
-      profileMode = false;
       setStatus("", false);
-      updateControls();
-      accountToggle.focus();
+      leaveProfile();
     });
     profileForm.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -1459,6 +1710,7 @@
       busy = true;
       updateControls();
       setStatus("Saving account details…", false);
+      var profileSaved = false;
       try {
         var result = await postJSON("/api/customer/profile", profile);
         if (!result || !result.authenticated || !result.customer || typeof result.customer.email !== "string") {
@@ -1466,13 +1718,105 @@
         }
         customer = result.customer;
         profileMode = false;
+        quotationOpen = returnToQuotation && active === true;
+        returnToQuotation = false;
         fillProfileForm();
+        if (quotationOpen) fillQuotationContact();
+        profileSaved = true;
         setStatus("Account details saved.", false);
       } catch (error) {
         if (error.status === 401) await loadCurrent();
         setStatus(error.data && typeof error.data.error === "string" ? error.data.error : "We could not save your account details. Please try again.", true);
       } finally {
         finishOperation();
+        if (profileSaved && isOpen) (quotationOpen ? quotationProduct : accountToggle).focus();
+      }
+    });
+
+    quotationButton.addEventListener("click", openQuotation);
+    quotationBack.addEventListener("click", function () { closeQuotation(true); });
+    quotationCatalogueRetry.addEventListener("click", function () { loadQuotationCatalogue(!quotationProduct.value); });
+    quotationProduct.addEventListener("change", function () {
+      setQuotationStatus("", false);
+      syncQuotationFields();
+    });
+    quotationForm.addEventListener("input", function () { setQuotationStatus("", false); });
+    quotationForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (busy || loading || stale || quotationCatalogueLoading || hasPendingMessage() || !quotationOpen || !customer || active !== true || !quotationForm.reportValidity()) return;
+      var selection = quotationProduct.value;
+      var company = quotationCompany();
+      var fields = quotationForm.elements;
+      var productName = selection === "other" ? quotationOther.value.trim() : quotationCatalogue[selection];
+      var message = quotationMessage.value.trim();
+      if (!productName || (quotationMessage.required && !message)) {
+        setQuotationStatus(!productName ? "Enter a product or service." : "Enter the details of your request.", true);
+        (!productName ? quotationOther : quotationMessage).focus();
+        return;
+      }
+      if (!window.crypto || typeof window.crypto.randomUUID !== "function") {
+        setQuotationStatus("Quotation requests are unavailable in this browser. Please contact our team.", true);
+        return;
+      }
+      var payload = {
+        conversationId: conversationId,
+        companyId: company || null,
+        productKey: selection.indexOf("/") !== -1 ? selection.split("/")[1] : null,
+        productName: productName,
+        quantity: fields.quantity.value ? Number(fields.quantity.value) : null,
+        requiredBy: fields.requiredBy.value || null,
+        deliveryLocation: fields.deliveryLocation.value.trim(),
+        procurementRoute: fields.procurementRoute.value,
+        message: message,
+        enquiryType: company === "jfd" ? quotationEnquiryType.value : "",
+        country: company === "zodiac-nautic" || company === "safe-at-sea" ? quotationCountry.value.trim() : "",
+        city: company === "zodiac-nautic" ? fields.city.value.trim() : "",
+        postalCode: company === "zodiac-nautic" ? fields.postalCode.value.trim() : "",
+        navigationArea: company === "zodiac-nautic" ? fields.navigationArea.value.trim() : "",
+        region: company === "zodiac-nautic" ? fields.region.value.trim() : ""
+      };
+      var signature = JSON.stringify(payload);
+      if (!quotationRequestId || signature !== quotationPayloadSignature) {
+        quotationRequestId = window.crypto.randomUUID();
+        quotationPayloadSignature = signature;
+      }
+      payload.requestId = quotationRequestId;
+      busy = true;
+      stopPolling();
+      updateControls();
+      setQuotationStatus("Sending your request…", false);
+      var sent = false;
+      try {
+        var result = await postJSON("/api/chat/quotation", payload);
+        if (!result || result.ok !== true || !result.quotation) throw new Error("Unexpected quotation response");
+        sent = true;
+        resetQuotation();
+        var loaded = await loadCurrent();
+        setStatus(loaded
+          ? "Quotation request sent. Our team will follow up using your account details."
+          : "Your quotation request was sent, but the conversation could not be refreshed. Reload the conversation to see it.", !loaded);
+      } catch (error) {
+        var failure = error.data && typeof error.data.error === "string" ? error.data.error : "We could not confirm your request. Please try again or contact our team.";
+        if (error.status === 401 || error.status === 410 || (error.data && error.data.code === "NO_ACTIVE_CONVERSATION")) {
+          quotationOpen = false;
+          await loadCurrent();
+          setStatus(failure, true);
+        } else if (error.data && error.data.code === "PROFILE_INCOMPLETE") {
+          quotationOpen = false;
+          returnToQuotation = true;
+          profileMode = true;
+          fillProfileForm();
+          setStatus(failure, true);
+        } else if (error.data && error.data.code === "PRODUCT_CHANGED") {
+          await loadQuotationCatalogue(false);
+          setQuotationStatus(failure, true);
+        } else {
+          setQuotationStatus(failure, true);
+        }
+      } finally {
+        finishOperation();
+        if (isOpen && sent && !messageInput.disabled) messageInput.focus();
+        else if (isOpen && profileMode && !profileName.disabled) profileName.focus();
       }
     });
 

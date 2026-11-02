@@ -144,6 +144,16 @@ main { min-height: calc(100vh - 150px); }
 .contact-grid dt { color: var(--muted); font-size: 12px; }
 .contact-grid dd { margin: 5px 0 0; color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.quotation-list { display: grid; gap: 12px; margin-top: 18px; }
+.quotation-card { min-width: 0; padding: 17px; border: 1px solid #d9e3db; border-left: 3px solid #e7602d; background: #f8faf8; }
+.quotation-card-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
+.quotation-product { color: var(--ink); font-size: 15px; overflow-wrap: anywhere; }
+.quotation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 18px; margin: 16px 0 0; }
+.quotation-grid dt { color: var(--muted); font-size: 12px; }
+.quotation-grid dd { margin: 4px 0 0; color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
+.quotation-message, .quotation-contact { margin-top: 18px; padding-top: 15px; border-top: 1px solid #dfe8e0; }
+.quotation-message h5, .quotation-contact h5 { margin: 0; color: var(--ink); font-size: 13px; }
+.quotation-message p { margin-top: 7px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-list { display: grid; gap: 12px; margin-top: 18px; }
 .message { background: #f4f7f4; border-left: 3px solid #b5c9bd; padding: 15px; min-width: 0; }
 .message--assistant { border-left-color: #e7602d; background: #faf7f3; }
@@ -199,7 +209,7 @@ main { min-height: calc(100vh - 150px); }
   .filters { padding: 16px 20px; grid-template-columns: minmax(0, 1fr) minmax(110px, .7fr); }
   .list-item { padding: 16px 17px; }
   .detail-body, .editor-form { padding: 20px; }
-  .contact-grid { grid-template-columns: 1fr; gap: 15px; }
+  .contact-grid, .quotation-grid { grid-template-columns: 1fr; gap: 15px; }
   .status-form { align-items: stretch; flex-direction: column; }
   .status-form .field { max-width: none; }
   .footer { flex-wrap: wrap; }

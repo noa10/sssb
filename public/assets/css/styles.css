@@ -3055,7 +3055,9 @@ body.menu-open .mobile-scrim {
   line-height: 1.35;
 }
 
-.chat-fields input {
+.chat-fields input,
+.chat-fields select,
+.chat-fields textarea {
   display: block;
   width: 100%;
   min-width: 0;
@@ -3070,11 +3072,158 @@ body.menu-open .mobile-scrim {
   font-weight: 400;
 }
 
+.chat-fields select,
+.chat-fields input[type="date"] {
+  color-scheme: dark;
+}
+
+.chat-fields input::placeholder,
+.chat-fields textarea::placeholder {
+  color: #b6c8cc;
+  opacity: 1;
+}
+
+.chat-fields textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
 .chat-fields input:focus,
+.chat-fields select:focus,
+.chat-fields textarea:focus,
 .chat-message-form textarea:focus {
   outline: 2px solid #ffb08b;
   outline-offset: 1px;
   border-color: transparent;
+}
+
+.chat-conversation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+}
+
+.chat-quotation-open {
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 184, 151, 0.75);
+  border-radius: 7px;
+  background: transparent;
+  color: #ffd0b8;
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.chat-quotation-open:hover {
+  background: rgba(255, 184, 151, 0.12);
+}
+
+.chat-quotation-open:disabled,
+.chat-quotation button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.chat-quotation button:focus-visible,
+.chat-quotation-open:focus-visible {
+  outline: 2px solid var(--signal-bright);
+  outline-offset: 2px;
+}
+
+.chat-panel.has-quotation-view .chat-contact {
+  display: none;
+}
+
+.chat-quotation {
+  min-width: 0;
+  padding-bottom: 10px;
+}
+
+.chat-quotation-intro,
+.chat-quotation-retention {
+  color: var(--chat-muted);
+  font-size: 0.8rem;
+}
+
+.chat-quotation-contact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--chat-line);
+  border-radius: 8px;
+  background: rgba(9, 26, 37, 0.35);
+}
+
+.chat-quotation-contact > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--chat-muted);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.chat-quotation-contact strong {
+  color: var(--chat-text);
+  font-size: 0.84rem;
+}
+
+.chat-quotation-edit,
+.chat-quotation-back {
+  flex: none;
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #ffd0b8;
+  font-size: 0.77rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-quotation .chat-fields label > span,
+.chat-quotation .chat-fields label > strong,
+.chat-quotation .chat-fields small {
+  color: var(--chat-muted);
+  font-size: 0.74rem;
+  font-weight: 400;
+}
+
+.chat-quotation .chat-fields small {
+  display: block;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.chat-quotation-retention {
+  margin-top: 16px;
+}
+
+.chat-quotation-status {
+  margin-top: 14px;
+  padding: 9px 11px;
+  border-left: 2px solid #9bd5cb;
+  background: rgba(8, 24, 34, 0.36);
+  font-size: 0.78rem;
+}
+
+.chat-quotation-status.is-error {
+  border-color: #ffac87;
+  background: rgba(102, 40, 24, 0.55);
+}
+
+.chat-quotation-actions {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
 }
 
 .chat-consent {

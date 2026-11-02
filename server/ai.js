@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 
-const HANDOFF = 'Pricing, availability, delivery and formal quotations need to be confirmed by our team with the manufacturer. Please share the product, quantity and required date, and contact our team using email or WhatsApp.';
+const HANDOFF = 'Our team confirms pricing, availability, delivery and formal quotations with the manufacturer. Select Request quotation in this chat to send us your requirements, or contact our team using email or WhatsApp.';
 const UNKNOWN = 'I’m not sure I have that information yet. Could you tell me a little more about what you’re looking for? Our team can also help.';
 const CURRENCY = /(?:[$£€¥]|\b(?:rm|myr|usd|eur|gbp)\s*\d|\d\s*(?:myr|usd|eur|gbp|ringgit)\b)/i;
 // Company-policy text may mention delivery or support without making a commercial promise.

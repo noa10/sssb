@@ -93,6 +93,9 @@
     $('conversation-detail-content').hidden = true;
     $('conversation-detail-state').hidden = true;
     $('message-list').replaceChildren();
+    $('quotation-section').hidden = true;
+    $('quotation-list').replaceChildren();
+    $('quotation-count').textContent = '';
     $('conversation-status').value = 'new';
     $('conversation-status').disabled = false;
     $('conversation-status-save').disabled = false;
@@ -399,6 +402,62 @@
     container.scrollTop = scrollTop;
   }
 
+  function renderQuotations(quotations) {
+    const list = $('quotation-list');
+    list.replaceChildren();
+    $('quotation-section').hidden = quotations.length === 0;
+    $('quotation-count').textContent = `${quotations.length} ${quotations.length === 1 ? 'request' : 'requests'}`;
+
+    quotations.forEach((quotation) => {
+      const card = el('article', 'quotation-card');
+      const header = el('div', 'quotation-card-header');
+      header.append(el('strong', 'quotation-product', text(quotation.productName, 'General enquiry')),
+        el('span', 'subtle', niceDate(quotation.createdAt)));
+      card.append(header);
+      const details = el('dl', 'quotation-grid');
+      const addDetail = (label, value) => {
+        if (value == null || String(value).trim() === '') return;
+        const row = el('div');
+        row.append(el('dt', '', label), el('dd', '', String(value)));
+        details.append(row);
+      };
+      let requiredBy = quotation.requiredBy;
+      if (typeof requiredBy === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(requiredBy)) {
+        const [year, month, day] = requiredBy.split('-').map(Number);
+        requiredBy = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(year, month - 1, day));
+      }
+      addDetail('Manufacturer', quotation.companyName);
+      addDetail('Quantity', quotation.quantity);
+      addDetail('Required by', requiredBy);
+      addDetail('Delivery location', quotation.deliveryLocation);
+      addDetail('Procurement route', quotation.procurementRouteLabel);
+      addDetail('Area of interest', quotation.enquiryTypeLabel);
+      addDetail('Country', quotation.country);
+      addDetail('City', quotation.city);
+      addDetail('Postal code', quotation.postalCode);
+      addDetail('Navigation area', quotation.navigationArea);
+      addDetail('State, region or department', quotation.region);
+      if (details.childElementCount) card.append(details);
+      if (quotation.message) {
+        const request = el('div', 'quotation-message');
+        request.append(el('h5', '', 'Request details'), el('p', '', quotation.message));
+        card.append(request);
+      }
+      const contact = quotation.contact || {};
+      const snapshot = el('div', 'quotation-contact');
+      snapshot.append(el('h5', '', 'Contact at time of request'));
+      const contactGrid = el('dl', 'quotation-grid');
+      [['Name', contact.name], ['Email', contact.email], ['Phone', contact.phone], ['Company', contact.company]].forEach(([label, value]) => {
+        const row = el('div');
+        row.append(el('dt', '', label), el('dd', '', text(value)));
+        contactGrid.append(row);
+      });
+      snapshot.append(contactGrid);
+      card.append(snapshot);
+      list.append(card);
+    });
+  }
+
   async function openConversation(id, focus = true) {
     if (state.conversationSaving || state.conversationDeleting) {
       setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
@@ -428,6 +487,7 @@
       $('conversation-delete').disabled = false;
       $('conversation-delete').textContent = 'Delete enquiry';
       setNotice($('conversation-status-notice'), '');
+      renderQuotations(Array.isArray(data.quotations) ? data.quotations : []);
       const messages = $('message-list');
       messages.replaceChildren();
       data.messages.forEach((message) => {
@@ -479,7 +539,7 @@
     if (state.conversationSaving || state.conversationDeleting || !state.conversationId) return;
     const id = state.conversationId;
     const name = $('detail-name').textContent.trim() || 'this enquiry';
-    if (!window.confirm(`Delete the enquiry from “${name}”?\n\nThis permanently removes the conversation, transcript, contact details and the customer's link to it. This cannot be undone.`)) return;
+    if (!window.confirm(`Delete the enquiry from “${name}”?\n\nThis permanently removes the conversation, transcript, quotation requests, contact details and the customer's link to it. This cannot be undone.`)) return;
     const generation = state.generation;
     const button = $('conversation-delete');
     state.conversationDeleting = true;

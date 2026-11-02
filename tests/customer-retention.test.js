@@ -25,7 +25,7 @@ function guestMetadata(row) {
 // Only these SQL operations are simulated. Unknown statements fail rather than
 // falling through to a real database. Transactions restore state on rollback.
 function fakeDatabase() {
-  const data = { accounts: [], sessions: [], staffSessions: [], conversations: [], links: [], messages: [], knowledge: [], catalogueProducts: [], knowledgeLinks: [] };
+  const data = { accounts: [], sessions: [], staffSessions: [], conversations: [], links: [], messages: [], quotations: [], knowledge: [], catalogueProducts: [], knowledgeLinks: [] };
   const accountLocks = [];
   let now = Date.parse('2026-04-01T12:00:00.000Z');
   const active = (conversation) => !conversation.visitor_closed_at && conversation.created_at > now - 30 * DAY;
@@ -180,6 +180,11 @@ function fakeDatabase() {
       assert.match(query, /c\.created_at>DATE_SUB\(UTC_TIMESTAMP\(3\), INTERVAL 30 DAY\)/);
       const conversation = data.conversations.find((entry) => entry.id === params[0] && entry.created_at > now - 30 * DAY);
       return [conversation ? data.messages.filter((message) => message.conversation_id === conversation.id) : []];
+    }
+    if (query.startsWith('SELECT * FROM quotation_requests WHERE conversation_id=')) {
+      assert.match(query, /ORDER BY created_at DESC,id DESC/);
+      assert.doesNotMatch(query, /DATE_SUB/);
+      return [data.quotations.filter((entry) => entry.conversation_id === params[0]).slice().reverse()];
     }
     if (query.startsWith('DELETE m FROM messages m JOIN conversations c')) {
       assert.match(query, /c\.id=m\.conversation_id/);
@@ -784,7 +789,7 @@ test('an in-memory provider response finishing at the cutoff is not stored', asy
 });
 
 test('retention removes messages at the 30-day conversation boundary and keeps enquiry records', async () => {
-  const { pool } = setup();
+  const { pool, app } = setup();
   assert.equal(RETENTION_DAYS, 30);
   const expired = pool.guest('expired@example.com', pool.now - 31 * DAY);
   const boundary = pool.guest('boundary@example.com', pool.now - 30 * DAY);
@@ -794,8 +799,21 @@ test('retention removes messages at the 30-day conversation boundary and keeps e
     { id: 2, conversation_id: boundary.row.id, content: 'recent message in an old conversation', created_at: pool.now },
     { id: 3, conversation_id: recent.row.id, content: 'still retained' }
   );
+  pool.data.quotations.push({
+    id: 1, conversation_id: expired.row.id, company_id: 'fxc', company_name: 'FXC', product_key: null,
+    product_name: 'General enquiry', quantity: null, required_by: null, delivery_location: '', procurement_route: 'unsure',
+    message: 'Please provide a quote.', enquiry_type: '', country: '', city: '', postal_code: '', navigation_area: '', region: '',
+    contact_name: 'Saved Contact', contact_email: 'expired@example.com', contact_phone: '12345678', contact_company: 'Saved Company', created_at: pool.now - 31 * DAY
+  });
   assert.equal(await purgeExpiredMessages(pool), 2);
   assert.deepEqual(pool.data.messages.map((message) => message.id), [3]);
   assert.deepEqual(pool.data.conversations.map((conversation) => conversation.id), [expired.row.id, boundary.row.id, recent.row.id]);
+  assert.equal(pool.data.quotations.length, 1);
+  const staff = browser(app, { sss_staff: pool.staff() });
+  const detail = await staff.get(`/api/admin/conversations/${expired.row.id}`);
+  assert.equal(detail.status, 200);
+  assert.deepEqual(detail.body.messages, []);
+  assert.equal(detail.body.quotations[0].message, 'Please provide a quote.');
+  assert.equal(detail.body.quotations[0].contact.name, 'Saved Contact');
   assert.equal(await purgeExpiredMessages(pool), 0);
 });

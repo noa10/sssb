@@ -7,6 +7,7 @@ const multer = require('multer');
 const { createProvider, requiresHandoff, filterAnswer, HANDOFF, UNKNOWN } = require('./ai');
 const { indexChunks, extractPdf, searchKnowledge } = require('./knowledge');
 const { createCustomerService, customerProfile, validProfile } = require('./customer');
+const { normaliseQuotation, submitQuotation, listQuotations } = require('./quotations');
 const { RETENTION_DAYS } = require('./retention');
 const { isOneTypo } = require('./text');
 const { addProductReferences } = require('./product-references');
@@ -183,6 +184,32 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     clearCookie(res, COOKIE_VISITOR);
     res.json({ ok: true });
   }));
+  app.post('/api/chat/quotation', csrf, asyncRoute(async (req, res) => {
+    const account = await customers.customer(req);
+    if (!account) return res.status(401).json({ error: 'Sign in to request a quotation.' });
+    const row = await customers.activeForCustomer(account.id);
+    if (!row) return res.status(401).json({ error: 'Start a conversation first.' });
+    const conversationId = req.body?.conversationId;
+    if (typeof conversationId !== 'string' || !UUID.test(conversationId)) {
+      return res.status(400).json({ error: 'The conversation ID is invalid.' });
+    }
+    if (conversationId.toLowerCase() !== row.id.toLowerCase()) {
+      return res.status(410).json({ error: 'Your chat has changed or ended. Please start a new quotation request in the current chat.' });
+    }
+    const payload = normaliseQuotation(req.body);
+    await limit(`quotation:ip:${req.ip}`, 100, 3600);
+    await limit(`quotation:customer:${account.id}`, 30, 3600);
+    try {
+      const result = await submitQuotation(pool, account.id, row.id, payload);
+      const response = { ok: true, quotation: result.quotation };
+      if (result.duplicate) response.duplicate = true;
+      res.status(result.duplicate ? 200 : 201).json(response);
+    } catch (error) {
+      if (error.code === 'ER_NO_SUCH_TABLE') return res.status(503).json({ error: 'Quotation requests are not available yet. Please contact our team.' });
+      if (error.code === 'PROFILE_INCOMPLETE' || error.code === 'PRODUCT_CHANGED') return res.status(409).json({ error: error.message, code: error.code });
+      throw error;
+    }
+  }));
   app.post('/api/chat/messages', csrf, asyncRoute(async (req, res) => {
     const account = await customers.customer(req);
     if (!account) return res.status(401).json({ error: 'Sign in to continue your chat.' });
@@ -331,7 +358,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Enquiry not found.' });
-    res.json({ conversation: staffConversation(rows[0]), messages: await messagesFor(rows[0].id) });
+    res.json({ conversation: staffConversation(rows[0]), messages: await messagesFor(rows[0].id), quotations: await listQuotations(pool, rows[0].id) });
   }));
   app.patch('/api/admin/conversations/:id', csrf, protectedStaff, asyncRoute(async (req, res) => {
     if (!UUID.test(req.params.id) || !ADMIN_STATUSES.has(req.body?.status)) return res.status(400).json({ error: 'Invalid enquiry status.' });
