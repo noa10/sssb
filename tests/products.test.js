@@ -9,7 +9,7 @@ const path = require('node:path');
 const request = require('supertest');
 const { createApp } = require('../server/app');
 const { sanitizeRichText, richTextToPlain } = require('../server/rich-text');
-const { normaliseProduct, knowledgeContent, slugify, createProduct, updateProduct, publicCatalogue } = require('../server/catalogue-products');
+const { normaliseProduct, knowledgeContent, slugify, createProduct, updateProduct, deleteProduct, publicCatalogue } = require('../server/catalogue-products');
 const { sniffImage, storeProductImage } = require('../server/images');
 
 function fakePool() {
@@ -54,6 +54,20 @@ function fakePool() {
     }
     if (sql.startsWith('SELECT * FROM catalogue_products WHERE id=? FOR UPDATE')) {
       return [state.products.filter((row) => String(row.id) === String(params[0]))];
+    }
+    if (sql.startsWith('DELETE FROM catalogue_products WHERE id=?')) {
+      const before = state.products.length;
+      state.products = state.products.filter((row) => String(row.id) !== String(params[0]));
+      return [{ affectedRows: before - state.products.length }];
+    }
+    if (sql.startsWith('SELECT kind FROM knowledge_items WHERE id=? FOR UPDATE')) {
+      const item = knowledgeFor(params[0]);
+      return [item ? [{ kind: item.kind }] : []];
+    }
+    if (sql.startsWith("DELETE FROM knowledge_items WHERE id=? AND kind='product'")) {
+      const before = state.knowledge.length;
+      state.knowledge = state.knowledge.filter((entry) => !(String(entry.id) === String(params[0]) && entry.kind === 'product'));
+      return [{ affectedRows: before - state.knowledge.length }];
     }
     if (sql.startsWith('SELECT id FROM knowledge_items WHERE id=? FOR UPDATE')) {
       const item = knowledgeFor(params[0]);
@@ -172,6 +186,71 @@ test('creating and updating a product keeps the website record and knowledge rec
   assert.match(pool.state.knowledge[0].content, /Updated description/);
   assert.doesNotMatch(pool.state.chunks.map((chunk) => chunk.content).join('\n'), /A test product summary/);
   assert.match(pool.state.chunks.map((chunk) => chunk.content).join('\n'), /Updated description/);
+});
+
+test('deleting a product removes its catalogue record, product knowledge and chunks', async () => {
+  const pool = fakePool();
+  const created = await createProduct(pool, sampleInput(), {
+    imageName: '01234567-89ab-4cde-8f01-23456789abcd.png',
+    imageSource: 'upload'
+  });
+  assert.equal(pool.state.products.length, 1);
+  const result = await deleteProduct(pool, created.id);
+  assert.deepEqual(result, {
+    previousImage: '01234567-89ab-4cde-8f01-23456789abcd.png',
+    previousImageSource: 'upload'
+  });
+  assert.equal(pool.state.products.length, 0);
+  assert.equal(pool.state.knowledge.length, 0);
+  assert.equal(pool.state.chunks.length, 0);
+  assert.equal(await deleteProduct(pool, created.id), null);
+});
+
+test('deleting a product leaves unrelated linked knowledge in place', async () => {
+  const pool = fakePool();
+  const created = await createProduct(pool, sampleInput());
+  pool.state.knowledge[0].kind = 'company';
+  const result = await deleteProduct(pool, created.id);
+  assert.equal(result.previousImageSource, 'asset');
+  assert.equal(pool.state.products.length, 0);
+  assert.equal(pool.state.knowledge.length, 1);
+  assert.ok(pool.state.chunks.length >= 1);
+});
+
+test('the delete endpoint removes the product, knowledge and uploaded image', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sssb-delete-product-'));
+  try {
+    const filename = `${crypto.randomUUID()}.png`;
+    await fs.mkdir(path.join(directory, 'products'), { recursive: true });
+    await fs.writeFile(path.join(directory, 'products', filename), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const pool = fakePool();
+    const created = await createProduct(pool, sampleInput(), { imageName: filename, imageSource: 'upload' });
+    const appPool = {
+      async execute(sql, params = []) {
+        if (sql.includes('FROM staff_sessions')) return [[{ staff_id: '1', email: 'staff@example.com' }]];
+        if (sql.startsWith('UPDATE staff_sessions SET last_seen_at')) return [{ affectedRows: 1 }];
+        return pool.execute(sql, params);
+      },
+      async getConnection() { return pool.getConnection(); }
+    };
+    const app = createApp({ pool: appPool, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000', UPLOAD_DIR: directory } });
+    const agent = request.agent(app);
+    const csrf = await agent.get('/api/csrf').expect(200);
+    const tokenValue = csrf.body.csrfToken;
+    await agent.delete(`/api/admin/products/${created.id}`)
+      .set('Cookie', `sss_staff=${'A'.repeat(43)}; sss_csrf=${tokenValue}`)
+      .set('X-CSRF-Token', tokenValue)
+      .expect(200);
+    assert.equal(pool.state.products.length, 0);
+    assert.equal(pool.state.knowledge.length, 0);
+    await assert.rejects(fs.access(path.join(directory, 'products', filename)), /ENOENT/);
+    await agent.delete(`/api/admin/products/${created.id}`)
+      .set('Cookie', `sss_staff=${'A'.repeat(43)}; sss_csrf=${tokenValue}`)
+      .set('X-CSRF-Token', tokenValue)
+      .expect(404);
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
 });
 
 test('the public catalogue exposes only published products and strips rich-text markup again', async () => {

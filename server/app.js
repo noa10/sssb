@@ -11,7 +11,7 @@ const { RETENTION_DAYS } = require('./retention');
 const { isOneTypo } = require('./text');
 const { addProductReferences } = require('./product-references');
 const { addApprovedLinks } = require('./approved-links');
-const { listAdminProducts, getAdminProduct, createProduct, updateProduct, publicCatalogue } = require('./catalogue-products');
+const { listAdminProducts, getAdminProduct, createProduct, updateProduct, deleteProduct, publicCatalogue } = require('./catalogue-products');
 const { storeProductImage, deleteProductImage, PRODUCT_IMAGE, mediaType, productImageDir } = require('./images');
 const catalogueMeta = require('./catalogue-meta');
 const { digest, token, cookies, cookieOptions, clearCookie, csrfFor, issueCsrf, staffAuth, consumeLimit, verifyPassword, COOKIE_SESSION, COOKIE_VISITOR } = require('./security');
@@ -437,6 +437,15 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       if (stored) await deleteProductImage(stored.filename, settings.uploadDir).catch(() => {});
       throw error;
     }
+  }));
+  app.delete('/api/admin/products/:id', csrf, protectedStaff, asyncRoute(async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Product not found.' });
+    const result = await deleteProduct(pool, req.params.id);
+    if (!result) return res.status(404).json({ error: 'Product not found.' });
+    if (result.previousImageSource === 'upload') {
+      await deleteProductImage(result.previousImage, settings.uploadDir).catch(() => {});
+    }
+    res.json({ ok: true });
   }));
   app.post('/api/admin/documents', csrf, protectedStaff, upload.single('file'), asyncRoute(async (req, res) => {
     const title = clean(req.body?.title, 200);

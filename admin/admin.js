@@ -33,6 +33,7 @@
     productId: null,
     productEditing: false,
     productSaving: false,
+    productDeleting: false,
     productDirty: false,
     productDetailRequest: 0,
     productCompanies: [],
@@ -255,8 +256,8 @@
       setNotice($('knowledge-form-notice'), 'Wait for the current save to finish.', true);
       return false;
     }
-    if (state.productSaving) {
-      setNotice($('product-form-notice'), 'Wait for the current save to finish.', true);
+    if (state.productSaving || state.productDeleting) {
+      setNotice($('product-form-notice'), state.productDeleting ? 'Wait for the product to finish deleting.' : 'Wait for the current save to finish.', true);
       return false;
     }
     if (state.dirty || state.productDirty) return window.confirm('Discard your unsaved changes?');
@@ -852,6 +853,7 @@
     state.productDetailRequest += 1;
     state.productId = null;
     state.productEditing = false;
+    state.productDeleting = false;
     state.productDirty = false;
     $('product-form').reset();
     $('product-company').disabled = false;
@@ -864,6 +866,9 @@
     $('product-image-preview').removeAttribute('src');
     $('product-view-link').hidden = true;
     $('product-view-link').removeAttribute('href');
+    $('product-delete').hidden = true;
+    $('product-delete').disabled = false;
+    $('product-delete').textContent = 'Delete product';
     $('editor-product-status').hidden = true;
     $('product-slug-note').textContent = 'The address is generated from the name and cannot be changed later.';
     if (state.productQuill) state.productQuill.setText('');
@@ -935,6 +940,7 @@
       $('product-view-link').removeAttribute('href');
     }
     $('product-save').textContent = 'Save product';
+    $('product-delete').hidden = false;
     state.productDirty = false;
     renderProducts();
   }
@@ -968,6 +974,41 @@
     if (!canLeaveEditor()) return;
     clearProductEditor();
     renderProducts();
+  });
+  $('product-delete').addEventListener('click', async () => {
+    if (state.productSaving || state.productDeleting || !state.productId) return;
+    const id = state.productId;
+    const name = $('product-name').value.trim() || 'this product';
+    if (!window.confirm(`Delete “${name}”?\n\nThis permanently removes it from the website and the AI knowledge base, including its uploaded image. This cannot be undone.`)) return;
+    const generation = state.generation;
+    const button = $('product-delete');
+    state.productDeleting = true;
+    for (const control of $('product-form').elements) control.disabled = true;
+    if (state.productQuill) state.productQuill.disable();
+    busy(button, true, 'Deleting…', 'Delete product');
+    setNotice($('product-form-notice'), '');
+    try {
+      await request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!isCurrent(generation)) return;
+      state.productDirty = false;
+      state.productDeleting = false;
+      clearProductEditor();
+      await loadProducts();
+      if (isCurrent(generation)) {
+        setNotice($('global-notice'), 'Product deleted. The website and AI knowledge have been updated.');
+        $('product-detail').focus();
+      }
+    } catch (error) {
+      if (isCurrent(generation) && !error.unauthorized) setNotice($('product-form-notice'), error.message, true);
+    } finally {
+      state.productDeleting = false;
+      if (state.productEditing) {
+        for (const control of $('product-form').elements) control.disabled = false;
+        $('product-company').disabled = true;
+        if (state.productQuill) state.productQuill.enable();
+        busy(button, false, 'Deleting…', 'Delete product');
+      }
+    }
   });
   $('add-spec').addEventListener('click', () => { addSpecRow(); state.productDirty = true; });
   $('add-feature').addEventListener('click', () => { addFeatureRow(); state.productDirty = true; });

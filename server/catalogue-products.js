@@ -372,6 +372,33 @@ async function updateProduct(pool, id, body, options = {}) {
   }
 }
 
+async function deleteProduct(pool, id) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.execute('SELECT * FROM catalogue_products WHERE id=? FOR UPDATE', [id]);
+    if (!rows.length) { await conn.rollback(); return null; }
+    const existing = rows[0];
+    await conn.execute('DELETE FROM catalogue_products WHERE id=?', [id]);
+    if (existing.knowledge_id != null) {
+      // Remove only knowledge created for this product. A manually linked
+      // non-product item is left in place when the product row is deleted.
+      const [knowledge] = await conn.execute('SELECT kind FROM knowledge_items WHERE id=? FOR UPDATE', [existing.knowledge_id]);
+      if (knowledge.length && knowledge[0].kind === 'product') {
+        await conn.execute('DELETE FROM knowledge_chunks WHERE knowledge_id=?', [existing.knowledge_id]);
+        await conn.execute("DELETE FROM knowledge_items WHERE id=? AND kind='product'", [existing.knowledge_id]);
+      }
+    }
+    await conn.commit();
+    return { previousImage: existing.image_name || '', previousImageSource: existing.image_source || 'asset' };
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
 async function publicCatalogue(pool) {
   const [rows] = await pool.execute(
     `SELECT p.* FROM catalogue_products p
@@ -425,6 +452,7 @@ module.exports = {
   getAdminProduct,
   createProduct,
   updateProduct,
+  deleteProduct,
   publicCatalogue,
   adminProduct,
   publicProduct,

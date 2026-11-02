@@ -55,6 +55,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.12; letter-spacing: -.03em; }
 .button--secondary:hover:not(:disabled) { background: #eef3ef; border-color: #60776a; }
 .button--header { background: transparent; border-color: #6b8279; color: white; }
 .button--header:hover:not(:disabled) { background: #173740; }
+.button--danger { margin-left: auto; background: white; border-color: #c98a78; color: #8f2d13; }
+.button--danger:hover:not(:disabled) { background: #fdf0ec; border-color: #a12b12; }
 .button--wide { width: 100%; }
 .text-button { border: 0; background: none; color: #284a3e; font-size: 14px; font-weight: 700; padding: 8px; text-decoration: underline; text-underline-offset: 3px; }
 .section-label { display: block; color: #587166; font-size: 12px; font-weight: 700; letter-spacing: .035em; }
