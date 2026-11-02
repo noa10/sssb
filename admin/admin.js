@@ -16,6 +16,7 @@
     conversationId: null,
     conversationRequest: 0,
     conversationSaving: false,
+    conversationDeleting: false,
     knowledge: [],
     knowledgeLoaded: false,
     knowledgeRequest: 0,
@@ -25,6 +26,7 @@
     knowledgeId: null,
     editing: false,
     knowledgeSaving: false,
+    knowledgeDeleting: false,
     dirty: false,
     products: [],
     productsLoaded: false,
@@ -81,11 +83,16 @@
   function clearDetail() {
     state.conversationId = null;
     state.conversationRequest += 1;
+    state.conversationDeleting = false;
     $('conversation-placeholder').hidden = false;
     $('conversation-detail-content').hidden = true;
     $('conversation-detail-state').hidden = true;
     $('message-list').replaceChildren();
     $('conversation-status').value = 'new';
+    $('conversation-status').disabled = false;
+    $('conversation-status-save').disabled = false;
+    $('conversation-delete').disabled = false;
+    $('conversation-delete').textContent = 'Delete enquiry';
     $('detail-status').textContent = '';
     $('message-count').textContent = '';
     ['detail-name', 'detail-dates', 'detail-email', 'detail-phone', 'detail-company'].forEach((id) => { $(id).textContent = ''; });
@@ -96,6 +103,7 @@
     state.knowledgeDetailRequest += 1;
     state.knowledgeId = null;
     state.editing = false;
+    state.knowledgeDeleting = false;
     state.dirty = false;
     $('knowledge-form').reset();
     $('knowledge-kind').disabled = false;
@@ -103,6 +111,9 @@
     $('knowledge-detail-state').hidden = true;
     $('knowledge-placeholder').hidden = false;
     $('document-content').textContent = '';
+    $('knowledge-delete').hidden = true;
+    $('knowledge-delete').disabled = false;
+    $('knowledge-delete').textContent = 'Delete content';
     setNotice($('knowledge-form-notice'), '');
   }
 
@@ -236,8 +247,8 @@
 
   $('logout-button').addEventListener('click', async () => {
     if (!canLeaveEditor()) return;
-    if (state.conversationSaving) {
-      setNotice($('conversation-status-notice'), 'Wait for the status to finish saving.', true);
+    if (state.conversationSaving || state.conversationDeleting) {
+      setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
       return;
     }
     const button = $('logout-button');
@@ -252,8 +263,8 @@
   });
 
   function canLeaveEditor() {
-    if (state.knowledgeSaving) {
-      setNotice($('knowledge-form-notice'), 'Wait for the current save to finish.', true);
+    if (state.knowledgeSaving || state.knowledgeDeleting) {
+      setNotice($('knowledge-form-notice'), state.knowledgeDeleting ? 'Wait for the content to finish deleting.' : 'Wait for the current save to finish.', true);
       return false;
     }
     if (state.productSaving || state.productDeleting) {
@@ -266,8 +277,8 @@
 
   function selectView(view, force = false) {
     if (!force && state.view !== view && !canLeaveEditor()) return;
-    if (!force && state.view !== view && state.view === 'enquiries' && state.conversationSaving) {
-      setNotice($('conversation-status-notice'), 'Wait for the status to finish saving.', true);
+    if (!force && state.view !== view && state.view === 'enquiries' && (state.conversationSaving || state.conversationDeleting)) {
+      setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
       return;
     }
     if (state.view !== view) {
@@ -381,8 +392,8 @@
   }
 
   async function openConversation(id, focus = true) {
-    if (state.conversationSaving) {
-      setNotice($('conversation-status-notice'), 'Wait for the status to finish saving.', true);
+    if (state.conversationSaving || state.conversationDeleting) {
+      setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
       return;
     }
     const generation = state.generation;
@@ -406,6 +417,8 @@
       displayStatus($('detail-status'), conversation.status);
       $('conversation-status').value = conversation.status;
       $('conversation-status-save').disabled = false;
+      $('conversation-delete').disabled = false;
+      $('conversation-delete').textContent = 'Delete enquiry';
       setNotice($('conversation-status-notice'), '');
       const messages = $('message-list');
       messages.replaceChildren();
@@ -435,7 +448,7 @@
     const id = state.conversationId;
     const status = $('conversation-status').value;
     const button = $('conversation-status-save');
-    if (state.conversationSaving) return;
+    if (state.conversationSaving || state.conversationDeleting) return;
     state.conversationSaving = true;
     busy(button, true, 'Saving…', 'Save status');
     setNotice($('conversation-status-notice'), '');
@@ -454,9 +467,39 @@
       busy(button, false, 'Saving…', 'Save status');
     }
   });
+  $('conversation-delete').addEventListener('click', async () => {
+    if (state.conversationSaving || state.conversationDeleting || !state.conversationId) return;
+    const id = state.conversationId;
+    const name = $('detail-name').textContent.trim() || 'this enquiry';
+    if (!window.confirm(`Delete the enquiry from “${name}”?\n\nThis permanently removes the conversation, transcript, contact details and the customer's link to it. This cannot be undone.`)) return;
+    const generation = state.generation;
+    const button = $('conversation-delete');
+    state.conversationDeleting = true;
+    $('conversation-status').disabled = true;
+    $('conversation-status-save').disabled = true;
+    busy(button, true, 'Deleting…', 'Delete enquiry');
+    setNotice($('conversation-status-notice'), '');
+    try {
+      await request(`/api/admin/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!isCurrent(generation)) return;
+      state.conversationDeleting = false;
+      clearDetail();
+      await loadConversations();
+      if (isCurrent(generation)) setNotice($('global-notice'), 'Enquiry deleted.');
+    } catch (error) {
+      if (isCurrent(generation) && !error.unauthorized && String(state.conversationId) === String(id)) setNotice($('conversation-status-notice'), error.message, true);
+    } finally {
+      state.conversationDeleting = false;
+      if (String(state.conversationId) === String(id)) {
+        $('conversation-status').disabled = false;
+        $('conversation-status-save').disabled = false;
+        busy(button, false, 'Deleting…', 'Delete enquiry');
+      }
+    }
+  });
   $('refresh-conversations').addEventListener('click', () => {
-    if (state.conversationSaving) {
-      setNotice($('conversation-status-notice'), 'Wait for the status to finish saving.', true);
+    if (state.conversationSaving || state.conversationDeleting) {
+      setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
       return;
     }
     loadConversations();
@@ -616,6 +659,7 @@
     $('knowledge-content').value = text(item.content, '');
     $('document-content').textContent = text(item.content, 'No extracted content available.');
     $('knowledge-status').value = item.status;
+    $('knowledge-delete').hidden = false;
     updateEditorFields();
     renderKnowledge();
   }
@@ -626,6 +670,43 @@
     if (!canLeaveEditor()) return;
     clearEditor();
     renderKnowledge();
+  });
+  $('knowledge-delete').addEventListener('click', async () => {
+    if (state.knowledgeSaving || state.knowledgeDeleting || !state.knowledgeId) return;
+    const id = state.knowledgeId;
+    const kind = $('knowledge-kind').value;
+    const title = $('knowledge-title-input').value.trim() || 'this item';
+    const detail = kind === 'document'
+      ? 'This permanently removes the PDF, its extracted text and its search chunks.'
+      : 'This permanently removes it from the knowledge library and AI answers.';
+    if (!window.confirm(`Delete “${title}”?\n\n${detail} This cannot be undone.`)) return;
+    const generation = state.generation;
+    const button = $('knowledge-delete');
+    state.knowledgeDeleting = true;
+    for (const control of $('knowledge-form').elements) control.disabled = true;
+    busy(button, true, 'Deleting…', 'Delete content');
+    setNotice($('knowledge-form-notice'), '');
+    try {
+      await request(`/api/admin/knowledge/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!isCurrent(generation)) return;
+      state.dirty = false;
+      state.knowledgeDeleting = false;
+      clearEditor();
+      await loadKnowledge();
+      if (isCurrent(generation)) {
+        setNotice($('global-notice'), 'Content deleted.');
+        $('knowledge-detail').focus();
+      }
+    } catch (error) {
+      if (isCurrent(generation) && !error.unauthorized) setNotice($('knowledge-form-notice'), error.message, true);
+    } finally {
+      state.knowledgeDeleting = false;
+      if (state.editing) {
+        for (const control of $('knowledge-form').elements) control.disabled = false;
+        $('knowledge-kind').disabled = true;
+        busy(button, false, 'Deleting…', 'Delete content');
+      }
+    }
   });
   $('knowledge-kind').addEventListener('change', updateEditorFields);
   $('knowledge-form').addEventListener('input', () => { state.dirty = true; });
@@ -640,7 +721,7 @@
 
   $('knowledge-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (state.knowledgeSaving) return;
+    if (state.knowledgeSaving || state.knowledgeDeleting) return;
     const generation = state.generation;
     const editing = state.editing;
     const id = state.knowledgeId;

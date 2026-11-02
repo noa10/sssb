@@ -339,6 +339,12 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     if (!result.affectedRows) return res.status(404).json({ error: 'Enquiry not found.' });
     res.json({ ok: true });
   }));
+  app.delete('/api/admin/conversations/:id', csrf, protectedStaff, asyncRoute(async (req, res) => {
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Enquiry not found.' });
+    const [result] = await pool.execute('DELETE FROM conversations WHERE id=?', [req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ error: 'Enquiry not found.' });
+    res.json({ ok: true });
+  }));
   app.get('/api/admin/knowledge', protectedStaff, asyncRoute(async (req, res) => {
     // Product records own their linked knowledge; staff edit those in Products.
     const [counts] = await pool.execute('SELECT COUNT(*) AS total FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id WHERE p.id IS NULL');
@@ -385,6 +391,27 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       await conn.execute('UPDATE knowledge_items SET title=?,source_name=?,status=?,content=? WHERE id=?', [title,sourceName,status,content.trim(),old.id]);
       await indexChunks(conn, old.id, `${title}\n${content}`);
       await conn.commit();
+      res.json({ ok: true });
+    } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
+  }));
+  app.delete('/api/admin/knowledge/:id', csrf, protectedStaff, asyncRoute(async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Knowledge item not found.' });
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [rows] = await conn.execute('SELECT * FROM knowledge_items WHERE id=? FOR UPDATE', [req.params.id]);
+      if (!rows.length) { await conn.rollback(); return res.status(404).json({ error: 'Knowledge item not found.' }); }
+      const item = rows[0];
+      if (item.kind === 'product') {
+        const [managed] = await conn.execute('SELECT id FROM catalogue_products WHERE knowledge_id=? LIMIT 1', [item.id]);
+        if (managed.length) { await conn.rollback(); return res.status(409).json({ error: 'Delete this product in the Products section.' }); }
+      }
+      await conn.execute('DELETE FROM knowledge_chunks WHERE knowledge_id=?', [item.id]);
+      await conn.execute('DELETE FROM knowledge_items WHERE id=?', [item.id]);
+      await conn.commit();
+      if (item.kind === 'document' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.pdf$/i.test(item.storage_name || '')) {
+        await fs.unlink(path.join(settings.uploadDir, item.storage_name)).catch(() => {});
+      }
       res.json({ ok: true });
     } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
   }));

@@ -106,6 +106,7 @@
                 <form id="conversation-status-form" class="status-form">
                   <div class="field field--compact"><label for="conversation-status">Review status</label><select id="conversation-status" required><option value="new">New</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></div>
                   <button id="conversation-status-save" class="button button--secondary" type="submit">Save status</button>
+                  <button id="conversation-delete" class="button button--danger" type="button">Delete enquiry</button>
                 </form>
                 <p id="conversation-status-notice" class="notice" role="status" hidden></p>
                 <div class="detail-section"><h4>Contact details</h4><dl class="contact-grid"><div><dt>Email</dt><dd id="detail-email"></dd></div><div><dt>Phone</dt><dd id="detail-phone"></dd></div><div><dt>Company</dt><dd id="detail-company"></dd></div></dl></div>
@@ -146,7 +147,7 @@
                 <div id="document-content-field" class="field" hidden><span class="field-label">Extracted content</span><div id="document-content" class="document-content"></div></div>
                 <div class="field"><label for="knowledge-status">Publication status</label><select id="knowledge-status" required><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select><p class="field-note">Choose Published to publish this item, or Retired to take it out of use.</p></div>
                 <p id="knowledge-form-notice" class="notice" role="status" hidden></p>
-                <div class="form-actions"><button id="knowledge-save" class="button button--primary" type="submit">Save content</button><button id="knowledge-cancel" class="button button--secondary" type="button">Cancel</button></div>
+                <div class="form-actions"><button id="knowledge-save" class="button button--primary" type="submit">Save content</button><button id="knowledge-cancel" class="button button--secondary" type="button">Cancel</button><button id="knowledge-delete" class="button button--danger" type="button" hidden>Delete content</button></div>
               </form>
             </div>
           </section>
