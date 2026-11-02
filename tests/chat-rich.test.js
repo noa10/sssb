@@ -1,0 +1,143 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { addProductReferences } = require('../server/product-references');
+const { addApprovedLinks } = require('../server/approved-links');
+const { buildCatalogue } = require('../server/catalogue');
+const catalogue = require('../public/assets/data/products.json');
+const { render, safeUrl } = require('../public/assets/js/chat-content');
+
+const entries = new Map(buildCatalogue(catalogue).map((entry) => [entry.key, entry]));
+
+function cataloguePool(rows) {
+  let calls = 0;
+  return {
+    get calls() { return calls; },
+    async execute(sql) {
+      calls += 1;
+      assert.match(sql, /JOIN knowledge_items k ON k\.id=i\.knowledge_id/);
+      assert.match(sql, /k\.status='published' AND k\.kind='product'/);
+      return [rows.filter((row) => row.status === 'published' && row.kind === 'product')];
+    }
+  };
+}
+
+function mapping(key, status = 'published', hash = entries.get(key).hash) {
+  return { source_key: key, source_hash: hash, content: entries.get(key).content, status, kind: 'product' };
+}
+
+function answer(content) { return { id: '1', role: 'assistant', status: 'answered', content }; }
+
+test('product cards use current published catalogue mappings and survive reloads', async () => {
+  const mc4 = 'product:fxc/mc4';
+  const shadow = 'product:jfd/shadow';
+  const pool = cataloguePool([mapping(mc4), mapping(shadow, 'draft')]);
+  const messages = [answer('The FXC MC-4 and JFD Shadow have different roles.')];
+  const first = await addProductReferences(pool, messages);
+  const second = await addProductReferences(pool, messages);
+  assert.deepEqual(first, second);
+  assert.equal(first[0].products.length, 1);
+  assert.deepEqual(first[0].products[0], {
+    name: 'FXC MC-4', type: 'Ram-air personnel parachute system', url: '/fxc.html#mc4',
+    image: '/assets/img/products/fxc-mc4.jpg',
+    manufacturerUrl: 'https://www.fxcguardian.com/product/mc-4-parachute-system/'
+  });
+  assert.equal(messages[0].products, undefined);
+});
+
+test('retired, stale and unrelated products do not produce cards', async () => {
+  const pool = cataloguePool([
+    mapping('product:fxc/mc4', 'retired'),
+    mapping('product:jfd/shadow', 'published', '0'.repeat(64)),
+    mapping('product:zodiac-nautic/open-55'),
+    mapping('product:seacraft/go')
+  ]);
+  const input = [answer('The MC-4, Shadow and OPEN 6.5 are mentioned. You can go to the team.')];
+  assert.equal((await addProductReferences(pool, input))[0].products, undefined);
+  assert.equal((await addProductReferences(pool, [answer('Consider the OPEN 5.5.')]))[0].products[0].url, '/zodiac-nautic.html#open-55');
+  assert.equal((await addProductReferences(pool, [answer('Consider Seacraft GO!')]))[0].products[0].url, '/seacraft.html#go');
+  assert.equal((await addProductReferences(pool, [answer('The OPEN 5.50 is a different model.')]))[0].products, undefined);
+  const before = pool.calls;
+  await addProductReferences(pool, [answer('Hello! How can I help?'), { role: 'user', status: 'answered', content: 'MC-4' }]);
+  assert.equal(pool.calls, before);
+});
+
+test('staff edits can remove a product page or its manufacturer link', async () => {
+  const record = mapping('product:fxc/mc4');
+  const pool = cataloguePool([record]);
+  const messages = [answer('The FXC MC-4 is a parachute system.')];
+  record.content = record.content.replace(/Manufacturer source: .+/, 'Source reviewed by staff');
+  assert.equal((await addProductReferences(pool, messages))[0].products[0].manufacturerUrl, null);
+  record.content = record.content.replace('SSSB product page: /fxc.html#mc4', 'SSSB product page: /fxc.html#mc4-other');
+  assert.equal((await addProductReferences(pool, messages))[0].products, undefined);
+});
+
+test('assistant links require an exact URL in published knowledge', async () => {
+  const records = [
+    { status: 'published', content: 'Manufacturer source: https://example.com/product/.' },
+    { status: 'draft', content: 'https://draft.example/product' },
+    { status: 'published', content: 'https://bad.example/longer-path' }
+  ];
+  const pool = { async execute(sql, params) {
+    assert.match(sql, /k\.status='published'/);
+    return [records.filter((record) => record.status === 'published' && params.some((url) => record.content.includes(url)))];
+  } };
+  const input = [answer('[Product](https://example.com/product/) [Draft](https://draft.example/product) [Wrong path](https://bad.example/) [Fake](https://fake.example/)')];
+  const [result] = await addApprovedLinks(pool, input);
+  assert.deepEqual(result.approvedLinks, ['https://example.com/product/']);
+  records[0].status = 'retired';
+  assert.equal((await addApprovedLinks(pool, input))[0].approvedLinks, undefined);
+});
+
+test('a missing optional catalogue table keeps plain chat available', async () => {
+  const messages = [answer('The MC-4 is a parachute system.')];
+  const result = await addProductReferences({ async execute() { const error = new Error(); error.code = 'ER_NO_SUCH_TABLE'; throw error; } }, messages);
+  assert.deepEqual(result, messages);
+});
+
+class FakeNode {
+  constructor(tag, doc, text = '') { this.tagName = tag.toUpperCase(); this.ownerDocument = doc; this.children = []; this.attributes = {}; this.value = text; }
+  appendChild(child) { this.children.push(child); return child; }
+  replaceChildren() { this.children = []; this.value = ''; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  getAttribute(name) { return this.attributes[name] ?? null; }
+  set textContent(value) { this.children = []; this.value = String(value); }
+  get textContent() { return this.value + this.children.map((child) => child.textContent).join(''); }
+}
+const doc = { createElement: (tag) => new FakeNode(tag, doc), createTextNode: (text) => new FakeNode('#text', doc, text) };
+function nodes(node, tag) { return [node, ...node.children.flatMap((child) => nodes(child, tag))].filter((entry) => entry.tagName === tag.toUpperCase()); }
+
+test('rich chat renders formatting and safe links without interpreting HTML', () => {
+  const body = doc.createElement('div');
+  render(body, { role: 'assistant', content: '**Specs**\n- A useful feature\n- [Manufacturer](https://example.com/item)\n\n<script>alert(1)</script> [bad](javascript:alert) https://example.com/path. [fake](https://fake.example/)', approvedLinks: ['https://example.com/item', 'https://example.com/path'] }, 'https://site.example/');
+  assert.equal(nodes(body, 'strong')[0].textContent, 'Specs');
+  assert.equal(nodes(body, 'ul').length, 1);
+  assert.equal(nodes(body, 'li').length, 2);
+  assert.equal(nodes(body, 'script').length, 0);
+  assert.match(body.textContent, /<script>alert\(1\)<\/script> bad/);
+  const links = nodes(body, 'a');
+  assert.equal(links.length, 2);
+  assert.ok(links.every((link) => link.href.startsWith('https://example.com/')));
+  assert.ok(links.every((link) => link.rel === 'noopener noreferrer' && link.target === '_blank'));
+  assert.equal(safeUrl('javascript:alert(1)', 'https://site.example/'), null);
+  assert.equal(safeUrl('//evil.example/', 'https://site.example/'), null);
+  assert.equal(safeUrl('https://good.example@evil.example/', 'https://site.example/'), null);
+  assert.equal(safeUrl('http://evil.example/', 'https://site.example/'), null);
+});
+
+test('visitor text remains plain and product images use local catalogue paths', () => {
+  const body = doc.createElement('div');
+  render(body, { role: 'user', content: '**Hello** <img src=x onerror=alert(1)>' }, 'https://site.example/');
+  assert.equal(nodes(body, 'strong').length, 0);
+  assert.equal(nodes(body, 'img').length, 0);
+  assert.equal(body.textContent, '**Hello** <img src=x onerror=alert(1)>');
+
+  render(body, { role: 'assistant', content: 'A product', products: [
+    { name: 'FXC MC-4', type: 'Parachute', url: '/fxc.html#mc4', image: '/assets/img/products/fxc-mc4.jpg', manufacturerUrl: 'https://example.com/product' },
+    { name: 'Unsafe', url: '//evil.example/', image: 'https://evil.example/image.png' }
+  ] }, 'https://site.example/');
+  assert.equal(nodes(body, 'article').length, 1);
+  assert.equal(nodes(body, 'img')[0].getAttribute('src'), '/assets/img/products/fxc-mc4.jpg');
+  assert.equal(nodes(body, 'a')[0].href, 'https://site.example/fxc.html#mc4');
+});

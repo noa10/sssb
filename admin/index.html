@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Staff workspace | Semenanjung Selatan</title>
+  <link rel="icon" href="/assets/img/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <a class="brand" href="/" aria-label="Semenanjung Selatan home">
+        <img src="/assets/img/sssb-mark.png" alt="" width="44" height="44">
+        <span><strong>Semenanjung Selatan</strong><small>Staff workspace</small></span>
+      </a>
+      <div id="account" class="account" hidden>
+        <span id="account-email" class="account-email"></span>
+        <button id="logout-button" class="button button--header" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section id="session-loading" class="session-state" aria-live="polite">
+      <div class="state-indicator" aria-hidden="true"></div>
+      <p>Checking your session…</p>
+    </section>
+
+    <section id="session-error" class="session-state" hidden>
+      <div class="state-icon" aria-hidden="true">!</div>
+      <h1>Unable to open the workspace</h1>
+      <p id="session-error-message">Check your connection and try again.</p>
+      <button id="session-retry" class="button button--primary" type="button">Try again</button>
+    </section>
+
+    <section id="login-view" class="login-layout" hidden aria-labelledby="login-title">
+      <div class="login-intro">
+        <span class="section-label">Semenanjung Selatan Sdn Bhd</span>
+        <h1 id="login-title">Welcome to your workspace.</h1>
+        <p>Review enquiries and keep company and product information up to date.</p>
+        <div class="login-rule" aria-hidden="true"></div>
+        <p class="login-note">Staff access</p>
+      </div>
+      <div class="login-card">
+        <h2>Sign in</h2>
+        <p class="subtle">Use your staff account to continue.</p>
+        <form id="login-form">
+          <div class="field">
+            <label for="login-email">Email address</label>
+            <input id="login-email" name="email" type="email" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <p id="login-error" class="notice notice--error" role="alert" hidden></p>
+          <button class="button button--primary button--wide" id="login-submit" type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="workspace" class="workspace" hidden>
+      <div class="workspace-heading">
+        <div><span class="section-label">Staff workspace</span><h1>Good work starts here.</h1><p>Keep enquiries moving and information current.</p></div>
+        <div class="workspace-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+      <nav class="workspace-nav" aria-label="Workspace sections">
+        <button type="button" id="nav-enquiries" class="nav-button is-active" aria-current="page" data-view="enquiries">Enquiries</button>
+        <button type="button" id="nav-knowledge" class="nav-button" data-view="knowledge">Knowledge</button>
+      </nav>
+      <p id="global-notice" class="notice" role="status" hidden></p>
+
+      <section id="enquiries-view" class="view" aria-labelledby="enquiries-title">
+        <div class="view-heading">
+          <div><h2 id="enquiries-title">Enquiries</h2><p>Review conversations and update their progress.</p></div>
+          <button type="button" id="refresh-conversations" class="button button--secondary">Refresh</button>
+        </div>
+        <div class="work-grid">
+          <section class="panel list-panel" aria-labelledby="conversation-list-title">
+            <div class="panel-heading"><div><h3 id="conversation-list-title">All enquiries</h3><p id="conversation-count" class="subtle">Your conversation list</p></div></div>
+            <div class="filters">
+              <div class="field field--compact"><label for="conversation-search">Search enquiries</label><input id="conversation-search" type="search" placeholder="Name, email or company"></div>
+              <div class="field field--compact"><label for="conversation-filter">Status</label><select id="conversation-filter"><option value="all">All statuses</option><option value="new">New</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></div>
+            </div>
+            <div id="conversation-list-state" class="inline-state" role="status">Loading enquiries…</div>
+            <div id="conversation-list" class="item-list" aria-label="Enquiry list"></div>
+            <nav id="conversation-pagination" class="pagination" aria-label="Enquiry pages" hidden>
+              <button id="conversation-previous" class="button button--secondary" type="button">Previous</button>
+              <span id="conversation-page" class="subtle" aria-live="polite"></span>
+              <button id="conversation-next" class="button button--secondary" type="button">Next</button>
+            </nav>
+          </section>
+          <section id="conversation-detail" class="panel detail-panel" aria-labelledby="conversation-detail-title" tabindex="-1">
+            <div id="conversation-placeholder" class="empty-detail"><div class="empty-symbol" aria-hidden="true">↗</div><h3 id="conversation-detail-title">Select an enquiry</h3><p>Choose a conversation to view its contact details and transcript.</p></div>
+            <div id="conversation-detail-state" class="inline-state" role="status" hidden></div>
+            <div id="conversation-detail-content" hidden>
+              <div class="detail-header"><div><span class="section-label">Enquiry details</span><h3 id="detail-name"></h3><p id="detail-dates" class="subtle"></p></div><span id="detail-status" class="status"></span></div>
+              <div class="detail-body">
+                <form id="conversation-status-form" class="status-form">
+                  <div class="field field--compact"><label for="conversation-status">Review status</label><select id="conversation-status" required><option value="new">New</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></div>
+                  <button id="conversation-status-save" class="button button--secondary" type="submit">Save status</button>
+                </form>
+                <p id="conversation-status-notice" class="notice" role="status" hidden></p>
+                <div class="detail-section"><h4>Contact details</h4><dl class="contact-grid"><div><dt>Email</dt><dd id="detail-email"></dd></div><div><dt>Phone</dt><dd id="detail-phone"></dd></div><div><dt>Company</dt><dd id="detail-company"></dd></div></dl></div>
+                <div class="detail-section"><div class="section-heading"><h4>Transcript</h4><span id="message-count" class="subtle"></span></div><div id="message-list" class="message-list"></div><p id="message-empty" class="subtle" hidden>No messages in this conversation.</p></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="knowledge-view" class="view" aria-labelledby="knowledge-title" hidden>
+        <div class="view-heading">
+          <div><h2 id="knowledge-title">Knowledge</h2><p>Manage approved company, product and document content.</p></div>
+          <button type="button" id="new-knowledge" class="button button--primary">Add content</button>
+        </div>
+        <div class="work-grid">
+          <section class="panel list-panel" aria-labelledby="knowledge-list-title">
+            <div class="panel-heading"><div><h3 id="knowledge-list-title">Content library</h3><p id="knowledge-count" class="subtle">Your knowledge items</p></div><button id="refresh-knowledge" type="button" class="text-button">Refresh</button></div>
+            <div class="filters">
+              <div class="field field--compact"><label for="knowledge-search">Search content</label><input id="knowledge-search" type="search" placeholder="Title or source"></div>
+              <div class="field field--compact"><label for="knowledge-filter">Status</label><select id="knowledge-filter"><option value="all">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select></div>
+            </div>
+            <p id="knowledge-truncated" class="library-notice" role="status" hidden></p>
+            <div id="knowledge-list-state" class="inline-state" role="status">Loading content…</div>
+            <div id="knowledge-list" class="item-list" aria-label="Knowledge content list"></div>
+          </section>
+          <section id="knowledge-detail" class="panel detail-panel" aria-labelledby="knowledge-editor-title" tabindex="-1">
+            <div id="knowledge-placeholder" class="empty-detail"><div class="empty-symbol" aria-hidden="true">+</div><h3 id="knowledge-editor-title">Your content library</h3><p>Select an item to review it, or add company information, a product, or a PDF document.</p><button id="empty-add-knowledge" class="button button--secondary" type="button">Add content</button></div>
+            <div id="knowledge-detail-state" class="inline-state" role="status" hidden></div>
+            <div id="knowledge-editor" hidden>
+              <div class="detail-header"><div><span class="section-label">Content library</span><h3 id="editor-heading">Add content</h3><p id="editor-subtitle" class="subtle">Add information for review and publication.</p></div><span id="editor-status" class="status" hidden></span></div>
+              <form id="knowledge-form" class="editor-form">
+                <div class="field"><label for="knowledge-kind">Content type</label><select id="knowledge-kind" required><option value="company">Company information</option><option value="product">Product</option><option value="document">PDF document</option></select><p id="kind-note" class="field-note" hidden>Document content is extracted from the uploaded PDF and cannot be edited here.</p></div>
+                <div class="field"><label for="knowledge-title-input">Title</label><input id="knowledge-title-input" name="title" maxlength="200" required></div>
+                <div class="field"><label for="knowledge-source">Source name <span class="optional">(optional)</span></label><input id="knowledge-source" name="sourceName" maxlength="255"></div>
+                <div id="knowledge-content-field" class="field"><label for="knowledge-content">Content</label><textarea id="knowledge-content" name="content" rows="11" maxlength="30000" required></textarea></div>
+                <div id="knowledge-file-field" class="field" hidden><label for="knowledge-file">PDF file</label><input id="knowledge-file" name="file" type="file" accept="application/pdf,.pdf"><p class="field-note">Choose a PDF to upload.</p></div>
+                <div id="document-content-field" class="field" hidden><span class="field-label">Extracted content</span><div id="document-content" class="document-content"></div></div>
+                <div class="field"><label for="knowledge-status">Publication status</label><select id="knowledge-status" required><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select><p class="field-note">Choose Published to publish this item, or Retired to take it out of use.</p></div>
+                <p id="knowledge-form-notice" class="notice" role="status" hidden></p>
+                <div class="form-actions"><button id="knowledge-save" class="button button--primary" type="submit">Save content</button><button id="knowledge-cancel" class="button button--secondary" type="button">Cancel</button></div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="footer"><span>Semenanjung Selatan Sdn Bhd</span><span>Staff workspace</span></footer>
+</body>
+</html>

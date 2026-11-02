@@ -112,99 +112,16 @@
 
         <div class="form-panel reveal">
           <div class="form-intro">
-            <span class="eyebrow">Send a message</span>
+            <span class="eyebrow">Start a conversation</span>
             <h2 style="margin-top:14px">Tell us what you need.</h2>
-            <p>Share the requirement, product area and operating context. The more specific the brief, the more useful our first response can be.</p>
+            <p>Ask our AI assistant about our products, or contact our team directly for quotations and availability.</p>
           </div>
-
-          <form class="contact-form" data-contact-form novalidate>
-            <div class="form-errors" data-form-errors role="alert" tabindex="-1" hidden></div>
-            <div class="form-row">
-              <label for="contact-name">Full name <span class="req" aria-hidden="true">*</span></label>
-              <input id="contact-name" name="name" type="text" autocomplete="name" required aria-describedby="contact-name-error">
-              <p class="field-error" id="contact-name-error" hidden></p>
-            </div>
-            <div class="form-row">
-              <label for="contact-email">Email address <span class="req" aria-hidden="true">*</span></label>
-              <input id="contact-email" name="email" type="email" autocomplete="email" required aria-describedby="contact-email-error">
-              <p class="field-error" id="contact-email-error" hidden></p>
-            </div>
-            <div class="form-row">
-              <label for="contact-phone">Phone number</label>
-              <input id="contact-phone" name="phone" type="tel" autocomplete="tel" aria-describedby="contact-phone-error">
-              <p class="field-error" id="contact-phone-error" hidden></p>
-            </div>
-            <div class="form-row">
-              <label for="contact-enquiry">Enquiry type <span class="req" aria-hidden="true">*</span></label>
-              <select id="contact-enquiry" name="enquiry" required aria-describedby="contact-enquiry-error">
-                <option value="" disabled selected>Select an enquiry type</option>
-                <option value="product">Product enquiry</option>
-                <option value="procurement">Government procurement</option>
-                <option value="after-sales">After-sales support</option>
-                <option value="training">Training or consultancy</option>
-                <option value="general">General enquiry</option>
-              </select>
-              <p class="field-error" id="contact-enquiry-error" hidden></p>
-            </div>
-            <div class="form-row form-row--full">
-              <label for="contact-product">Company or product (optional)</label>
-              <select id="contact-product" name="product" data-product-choice aria-describedby="contact-product-help">
-                <option value="">No specific company or product yet</option>
-                <optgroup label="Diving Equipment / JFD">
-                  <option value="jfd" data-enquiry-label="JFD products">JFD — General enquiry</option>
-                  <option value="jfd/shadow" data-enquiry-label="JFD Shadow">JFD — Shadow</option>
-                  <option value="jfd/enforcer" data-enquiry-label="JFD Enforcer">JFD — Enforcer</option>
-                  <option value="jfd/stealth-multi-role" data-enquiry-label="JFD Stealth Multi-Role">JFD — Stealth Multi-Role</option>
-                  <option value="jfd/stealth-sc" data-enquiry-label="JFD Stealth SC">JFD — Stealth SC</option>
-                </optgroup>
-                <optgroup label="Diving Equipment / Seacraft">
-                  <option value="seacraft" data-enquiry-label="Seacraft products">Seacraft — General enquiry</option>
-                  <option value="seacraft/future-1000" data-enquiry-label="Seacraft FUTURE 1000">Seacraft — FUTURE 1000</option>
-                  <option value="seacraft/ghost-2000" data-enquiry-label="Seacraft GHOST 2000">Seacraft — GHOST 2000</option>
-                  <option value="seacraft/go" data-enquiry-label="Seacraft GO!">Seacraft — GO!</option>
-                  <option value="seacraft/enc3-pro" data-enquiry-label="Seacraft ENC3-PRO">Seacraft — ENC3-PRO</option>
-                </optgroup>
-                <optgroup label="Parachute Systems / FXC">
-                  <option value="fxc" data-enquiry-label="FXC products">FXC — General enquiry</option>
-                  <option value="fxc/mc4" data-enquiry-label="FXC MC-4">FXC — MC-4</option>
-                  <option value="fxc/t10d" data-enquiry-label="FXC T-10D (Modified)">FXC — T-10D (Modified)</option>
-                  <option value="fxc/model-12000" data-enquiry-label="FXC Model 12000">FXC — Model 12000</option>
-                  <option value="fxc/model-2101" data-enquiry-label="FXC Model 2101">FXC — Model 2101</option>
-                </optgroup>
-                <optgroup label="Inflatable Systems / Zodiac Nautic">
-                  <option value="zodiac-nautic" data-enquiry-label="Zodiac Nautic products">Zodiac Nautic — General enquiry</option>
-                  <option value="zodiac-nautic/open-55" data-enquiry-label="Zodiac Nautic OPEN 5.5">Zodiac Nautic — OPEN 5.5</option>
-                  <option value="zodiac-nautic/open-65" data-enquiry-label="Zodiac Nautic OPEN 6.5">Zodiac Nautic — OPEN 6.5</option>
-                  <option value="zodiac-nautic/pro-55" data-enquiry-label="Zodiac Nautic PRO 5.5">Zodiac Nautic — PRO 5.5</option>
-                  <option value="zodiac-nautic/medline-68" data-enquiry-label="Zodiac Nautic MEDLINE 6.8">Zodiac Nautic — MEDLINE 6.8</option>
-                </optgroup>
-                <optgroup label="Inflatable Systems / Safe at Sea">
-                  <option value="safe-at-sea" data-enquiry-label="Safe at Sea products">Safe at Sea — General enquiry</option>
-                  <option value="safe-at-sea/rescuerunner" data-enquiry-label="Safe at Sea RescueRunner">Safe at Sea — RescueRunner</option>
-                  <option value="safe-at-sea/guardrunner" data-enquiry-label="Safe at Sea GuardRunner">Safe at Sea — GuardRunner</option>
-                  <option value="safe-at-sea/saferunner" data-enquiry-label="Safe at Sea SafeRunner">Safe at Sea — SafeRunner</option>
-                  <option value="safe-at-sea/elecorunner" data-enquiry-label="Safe at Sea ElEcoRunner">Safe at Sea — ElEcoRunner</option>
-                </optgroup>
-              </select>
-              <p class="form-help" id="contact-product-help">Choose a company or model from our current catalogue. <a href="products.html">View all product details.</a></p>
-            </div>
-            <div class="form-row form-row--full">
-              <label for="contact-message">How can we help? <span class="req" aria-hidden="true">*</span></label>
-              <textarea id="contact-message" name="message" rows="5" required aria-describedby="contact-message-error"></textarea>
-              <p class="field-error" id="contact-message-error" hidden></p>
-            </div>
-            <p class="form-status" data-form-status role="status" hidden></p>
-            <div class="form-actions">
-              <button class="btn btn--primary" type="submit">Send enquiry <svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.6"/></svg></button>
-              <span class="form-note">Required fields are marked. This design preview does not transmit email.</span>
-            </div>
-          </form>
-
-          <div class="form-success" data-form-success hidden>
-            <svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4.5 12 5 5L20 6.5" stroke="currentColor" stroke-width="1.6"/></svg>
-            <h3>Thank you. Your message is ready.</h3>
-            <p>This preview validates the enquiry without sending it. Connect the form to the SSSB inbox before publishing the site to receive live messages.</p>
-            <button class="btn btn--outline" type="button" data-form-reset>Send another enquiry</button>
+          <div class="contact-options">
+            <button class="btn btn--primary" type="button" data-open-chat hidden>Open AI chat</button>
+            <p>For a quotation, availability or direct assistance, contact our team.</p>
+            <a href="mailto:info@semenanjungselatan.com">info@semenanjungselatan.com</a>
+            <a href="tel:+6072352330">+60 7-235 2330</a>
+            <p>Please do not share sensitive, confidential or classified information in the chat.</p>
           </div>
         </div>
       </div>

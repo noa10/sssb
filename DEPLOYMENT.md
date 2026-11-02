@@ -1,0 +1,112 @@
+# Plesk setup and operation
+
+This is a Node.js 22 application with MariaDB 10.5. It adds a visitor chat and a protected staff dashboard to the existing website. It does not send email or WhatsApp messages: visitors choose whether to send a message using their own apps. The AI provider is disabled until configured. Never expose API keys or database credentials in files under the public document root.
+
+## Before deploying
+
+- Confirm the database and user are correct and do not overwrite any existing data. The migrations create tables if absent; back up existing data and review the SQL files in `migrations/` before running them.
+- Confirm HTTPS for the site. Enter your Plesk database password and AI provider key only in the hosting environment, never in git or browser JavaScript.
+- Decide on and publish an appropriate privacy notice, retention period, backup and deletion process, and the staff account identities. Confirm your permissions to use the product documents and that their contents are appropriate for public AI answers.
+- Choose an AI provider that permits public customer-facing chat and whose data policies meet your needs. OpenCode Go's suitability for this use remains unconfirmed. This app supports an OpenAI-compatible Chat Completions API through `AI_PROVIDER=openai-compatible`; the actual provider, endpoint, model and credentials must be configured and tested. No provider is enabled by default. Do not set mock mode in production.
+- Keep `AI_HOURLY_LIMIT` conservative and set a provider-side budget; these are limits, not a guaranteed spending cap. `WHATSAPP_NUMBER` should only be set once the business number is confirmed.
+
+## File layout
+
+Plesk Application Root is `/test.semenanjungselatan.com`; its Document Root is `/test.semenanjungselatan.com/public`. The Git checkout must be deployed into that application root. Keep Node source, `node_modules`, migration files and uploads **outside** `public`. The parent application folder must not be web-served by another domain. The repository is arranged as follows:
+
+```text
+application root/
+  app.js
+  package.json
+  package-lock.json
+  server/
+  scripts/
+  migrations/
+  admin/
+  uploads/          # or an absolute private path outside document root
+  public/
+    index.html
+    ...other website pages...
+    assets/
+```
+
+The repository already contains the website pages and assets under `public/`, so a Git deployment to the application root does not require manually copying them. Do not put `.git`, `node_modules`, source code, backups, configuration, private uploads or `.env` files into `public/`. Check `public/` has no old private files before going live.
+
+For an existing Plesk Git deployment, verify the repository's deployment path is the **application root**, not `public/`. If Plesk currently deploys the old root-level website into `public/`, change the deployment path before deploying this layout. Check for untracked files in both locations and back them up before removing anything. Keep `uploads/` and hosting configuration outside Git and ensure deployments preserve them. Deploy only the intended branch and commit after they have been pushed.
+
+Plesk Git commonly uses a separate repository and deployment directory; a successful Git pull or deployment only updates files. It does not install npm dependencies, run migrations, create staff accounts or restart the Node app. Those are separate setup steps below.
+
+## Configure in Plesk
+
+1. Select Node.js 22, npm, application root as above, document root `public`, startup file `app.js`, and production mode.
+2. Configure environment variables from `.env.example` in Plesk. Set `APP_ORIGIN` to the exact HTTPS origin without a path or trailing slash. Use the Plesk database host, database name, user and password. Set `UPLOAD_DIR` to a writable private absolute path outside every web root. `TRUST_PROXY=1` is appropriate only when direct access to Node is blocked and Plesk is its trusted reverse proxy; verify this with your host.
+3. In the Node.js interface, run **NPM Install**. Run `npm run migrate` with the same environment variables. Use a database account permitted to create tables during migration, then restrict runtime privileges where possible. Review any migration error; never delete or reset the existing database as a troubleshooting step.
+4. In an interactive server terminal, run `npm run staff` to provision the first staff user. Choose a unique strong password; the script prompts without displaying it. If Plesk's command runner is non-interactive, use the host's SSH or terminal feature instead. There are no default staff credentials or public staff sign-ups.
+5. Restart the Node app. Visit `/admin` over HTTPS, sign in, add reviewed company/product content and upload approved searchable text PDFs. Items default to draft in the dashboard workflow; publish only content approved for public use. To add the website catalogue, follow the catalogue import steps below. Test the visitor chat and staff review.
+6. Test direct URLs for `.env`, `.git`, server source, migration files and unapproved documents. All must be inaccessible. Test a visitor cannot access another conversation or staff data. Plesk may serve `public/` directly, so protect secrets at the actual document-root boundary, not just through Node routing.
+
+The application requires outbound HTTPS to the chosen AI provider. A database outage stops new requests; provider errors leave the enquiry visible to staff. The email and WhatsApp links use the visitor's own apps; check the destinations before launch. Avoid testing live AI without considering provider charges.
+
+New conversations begin with a saved welcome message. Standalone greetings and common misspellings are handled locally. When a product search has no matches, it can retry an unambiguous one-character typo in published titles; model numbers remain exact. If no source is found, the configured AI may classify the visitor's message as a greeting, thanks, help request or small talk. Only a fixed conversational reply or a request for clarification is shown in that case; this classification may incur provider charges. If the provider is unavailable, the app falls back to the clarification.
+
+Assistant replies support basic formatting and links. Visitors can drag the top-left handle (or focus it and use the arrow keys) to resize the panel, and expand it to fullscreen from the header. Escape leaves fullscreen first, then closes the panel. External links in an assistant response are clickable only while the exact HTTPS destination appears in published knowledge; same-site links remain available. Product cards are rebuilt when a chat is opened from products named in the assistant's response and their currently published catalogue mappings; no additional message data or migration is needed. They link to the public product page and manufacturer, using images already on the site. If an entry is retired, its product-page reference is removed, or its source has changed since import, its card is hidden. Removing the manufacturer source from the published record also removes that link. The cards therefore reflect the current catalogue, not a historical snapshot. Staff transcripts retain the original message text.
+
+## Customer accounts and message retention
+
+Visitors may chat without an account, or create a customer account to continue an open chat on another device. To attach an existing guest chat, they must create or sign in to an account with the same email address **in the browser that started the chat**. The browser's guest token proves ownership; knowing the email address alone does not grant access. Signing out does not end the account's chat. A new chat can be started after the previous chat ends or expires.
+
+Apply `003_customer_accounts.sql` to the intended database before starting this version of the application. `npm run migrate` includes it, or on an existing installation run the migration separately with the application's database environment:
+
+```bash
+node scripts/migrate.js 003_customer_accounts.sql
+```
+
+Customer email addresses are not verified, and the application cannot send password-reset emails. Someone could register an address they do not control, and customers who forget their password cannot currently recover their account. Arrange a suitable verification and recovery process before relying on these accounts in production.
+
+A conversation expires 30 days after it was started, regardless of later activity. Both customer and staff views stop showing its messages at the cutoff. The application deletes expired user and assistant message rows on startup and then approximately every 15 minutes while the Node process is running. Conversations and their enquiry contact details remain available to staff. Starting this version will also delete messages in existing conversations that are already 30 days old. This cleanup does not remove information retained in database backups, server logs or by an AI provider; manage those retention periods separately.
+
+For cleanup when the web process is stopped or idle, configure a Plesk scheduled task to run `scripts/purge-expired-messages.js` every 15 minutes using Node.js 22 and the same database environment as the app. For example, if the application's private `.env` file contains that environment, the task can run:
+
+```bash
+node --env-file=/test.semenanjungselatan.com/.env /test.semenanjungselatan.com/scripts/purge-expired-messages.js
+```
+
+Use the Node.js 22 executable path provided by the host if `node` in scheduled tasks resolves to another version. Keep the environment file outside `public/` and do not put credentials in the scheduled command. Check Plesk's task output and alert on failures: neither a stopped process nor a failed scheduled job can delete messages until it runs successfully. Git deployment does not create scheduled tasks.
+
+## Import the website catalogue
+
+The importer converts `public/assets/data/products.json` into individual published product entries and company profiles, with source attribution. It does not import brochure PDFs, prices, stock, or unverified company certifications. Review the catalogue and manufacturer sources before exposing the assistant publicly; specifications may change and the catalogue's verification date applies to the entire catalogue.
+
+The default command is an offline preview; it does not connect to a database:
+
+```bash
+npm run catalogue
+```
+
+Before importing, point the environment at the intended database and apply `002_catalogue_imports.sql` through `npm run migrate`, or apply just that migration to an existing installation:
+
+```bash
+node scripts/migrate.js 002_catalogue_imports.sql
+```
+
+With the same environment, inspect the target and existing records without changing them:
+
+```bash
+npm run catalogue -- --check
+```
+
+If the printed database target is correct and any conflicts are resolved, import the entries:
+
+```bash
+npm run catalogue -- --apply
+```
+
+When using a local `.env` file, prefix the corresponding Node script with `node --env-file=.env` (for example, `node --env-file=.env scripts/import-catalogue.js --check`). Shell environment values override `.env` values; make sure the local port is the MariaDB port. Plesk needs the same commands run with its own environment after the code has been deployed; Git deployment does not import database records.
+
+Each catalogue record has a permanent key based on its company/product ID. Re-running the importer skips it without changing staff edits, chunks or publication status. Changed source data is reported for staff review rather than automatically replacing an existing entry. If a key disappears or an untracked staff item has the same title, reconcile it before importing. If there are other untracked company or product entries, review them for duplicates; `--acknowledge-unmapped` permits an import only after that review and still refuses exact title conflicts. Do not rename catalogue IDs casually; a missing old key blocks a subsequent import to prevent duplicates. Keep independent staff creation paused during reconciliation.
+
+## Local development
+
+Configure the same environment variables for a local disposable MariaDB database; `NODE_ENV=development` and `AI_PROVIDER=mock` avoid a paid AI service. When using an OpenAI-compatible service on the same computer, development mode also permits `AI_BASE_URL` over HTTP for `localhost`, `127.0.0.1` or `[::1]`. Remote AI services and all production connections require HTTPS. Node does not load `.env` automatically: when using that file locally, start the app with `node --env-file=.env app.js`, and use the same `--env-file=.env` option when running the migration or staff scripts. Set `APP_ORIGIN` to the exact local URL including `http://` and the listening port. The website pages and assets are served from `public/` in both development and production.
+
+`npm test` runs local automated checks, including visitor and staff HTTP journeys against a simulated database and a sample PDF extraction. These checks do not verify MariaDB SQL, HTTPS proxy configuration, a real AI provider or Plesk deployment; those require separate environment-specific checks.
