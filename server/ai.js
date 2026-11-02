@@ -2,6 +2,15 @@ const OpenAI = require('openai');
 
 const HANDOFF = 'Pricing, availability, delivery and formal quotations need to be confirmed by our team with the manufacturer. Please share the product, quantity and required date, and contact our team using email or WhatsApp.';
 const UNKNOWN = 'I’m not sure I have that information yet. Could you tell me a little more about what you’re looking for? Our team can also help.';
+const CURRENCY = /(?:[$£€¥]|\b(?:rm|myr|usd|eur|gbp)\s*\d|\d\s*(?:myr|usd|eur|gbp|ringgit)\b)/i;
+// Company-policy text may mention delivery or support without making a commercial promise.
+const COMMERCIAL_DETAIL = /\b(?:pric(?:e|es|ing)|cost|quot(?:e|es|ation|ations)|stock|availability|lead[ -]?time|shipping|shipments?|shipped|payment terms|discount|ringgit|harga|stok)\b|\bavailable\s+(?:now|immediately|today|from stock|in stock)\b|\b(?:can|could|will|would)\s+(?:deliver|ship)\b|\b(?:deliver(?:y|ies|ed)?|shipping|shipments?|shipped)\s+(?:by|on|within|before|time|date|schedule|cost|charge|lead|is|takes|in)\b/i;
+const CONTACT = /\b(?:contact|team|staff|whatsapp|email)\b/i;
+
+function hasCommercialDetail(text) {
+  // Figures and delivery promises are commercial; policy prose that merely names them is not.
+  return CURRENCY.test(text) || (COMMERCIAL_DETAIL.test(text) && !CONTACT.test(text));
+}
 
 function requiresHandoff(text) {
   // Explicit commercial terms and purchase intent go to staff. A bare duration is allowed as a product question.
@@ -12,9 +21,8 @@ function requiresHandoff(text) {
 
 function filterAnswer(answer) {
   const text = String(answer || '').trim();
-  const commercial = /(?:[$£€¥]|\b(?:rm|myr|usd|eur|gbp)\s*\d|\d\s*(?:myr|usd|eur|gbp|ringgit)\b)/i.test(text);
-  // Replies that already route commercial questions to staff are safe; unsolicited figures are not.
-  if (commercial || (requiresHandoff(text) && !/\b(?:contact|team|staff|whatsapp|email)\b/i.test(text))) return HANDOFF;
+  // Replies that already route commercial questions to staff are safe; unsolicited figures or promises are not.
+  if (hasCommercialDetail(text)) return HANDOFF;
   return text.slice(0, 5000);
 }
 
@@ -54,7 +62,7 @@ function createProvider(env = process.env) {
     const greeting = /^(?:(?:hi|hello|hey|good (?:morning|afternoon|evening))[\s!.,]*(?:there)?[\s!.,]*)+$/i.test(lastMessage);
     if (!sources.length && !greeting) return UNKNOWN;
     const reference = sources.map((item, i) => {
-      const safe = item.content.split(/\n|(?<=[.!?])\s+/).filter((part) => !requiresHandoff(part) && !/(?:[$£€¥]|\b(?:rm|myr|usd|eur|gbp)\s*\d)/i.test(part)).join('\n');
+      const safe = item.content.split(/\n|(?<=[.!?])\s+/).filter((part) => !hasCommercialDetail(part)).join('\n');
       return `[${i + 1}] ${item.title}${item.sourceName ? ` (${item.sourceName})` : ''}\n${safe}`;
     }).join('\n\n');
     const response = await client.chat.completions.create({
@@ -71,4 +79,4 @@ function createProvider(env = process.env) {
   } };
 }
 
-module.exports = { createProvider, requiresHandoff, filterAnswer, HANDOFF, UNKNOWN };
+module.exports = { createProvider, requiresHandoff, filterAnswer, hasCommercialDetail, HANDOFF, UNKNOWN };

@@ -4,11 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { addProductReferences } = require('../server/product-references');
 const { addApprovedLinks } = require('../server/approved-links');
-const { buildCatalogue } = require('../server/catalogue');
-const catalogue = require('../public/assets/data/products.json');
 const { render, safeUrl } = require('../public/assets/js/chat-content');
-
-const entries = new Map(buildCatalogue(catalogue).map((entry) => [entry.key, entry]));
 
 function cataloguePool(rows) {
   let calls = 0;
@@ -16,23 +12,37 @@ function cataloguePool(rows) {
     get calls() { return calls; },
     async execute(sql) {
       calls += 1;
-      assert.match(sql, /JOIN knowledge_items k ON k\.id=i\.knowledge_id/);
-      assert.match(sql, /k\.status='published' AND k\.kind='product'/);
-      return [rows.filter((row) => row.status === 'published' && row.kind === 'product')];
+      assert.match(sql, /FROM catalogue_products p JOIN knowledge_items k ON k\.id=p\.knowledge_id/);
+      assert.match(sql, /p\.status='published' AND k\.status='published'/);
+      return [rows.filter((row) => row.status === 'published')];
     }
   };
 }
 
-function mapping(key, status = 'published', hash = entries.get(key).hash) {
-  return { source_key: key, source_hash: hash, content: entries.get(key).content, status, kind: 'product' };
+function product(companyId, slug, name, type, overrides = {}) {
+  return {
+    company_id: companyId,
+    slug,
+    name,
+    product_type: type,
+    image_name: `${companyId}-${slug}.jpg`,
+    image_source: 'asset',
+    manufacturer_source: 'https://example.com/product/',
+    status: 'published',
+    ...overrides
+  };
 }
 
 function answer(content) { return { id: '1', role: 'assistant', status: 'answered', content }; }
 
-test('product cards use current published catalogue mappings and survive reloads', async () => {
-  const mc4 = 'product:fxc/mc4';
-  const shadow = 'product:jfd/shadow';
-  const pool = cataloguePool([mapping(mc4), mapping(shadow, 'draft')]);
+test('product cards use current published catalogue rows and survive reloads', async () => {
+  const pool = cataloguePool([
+    product('fxc', 'mc4', 'MC-4', 'Ram-air personnel parachute system', {
+      image_name: 'fxc-mc4.jpg',
+      manufacturer_source: 'https://www.fxcguardian.com/product/mc-4-parachute-system/'
+    }),
+    product('jfd', 'shadow', 'Shadow', 'Tactical diving rebreather', { status: 'draft' })
+  ]);
   const messages = [answer('The FXC MC-4 and JFD Shadow have different roles.')];
   const first = await addProductReferences(pool, messages);
   const second = await addProductReferences(pool, messages);
@@ -46,31 +56,45 @@ test('product cards use current published catalogue mappings and survive reloads
   assert.equal(messages[0].products, undefined);
 });
 
-test('retired, stale and unrelated products do not produce cards', async () => {
+test('retired and unrelated products do not produce cards', async () => {
   const pool = cataloguePool([
-    mapping('product:fxc/mc4', 'retired'),
-    mapping('product:jfd/shadow', 'published', '0'.repeat(64)),
-    mapping('product:zodiac-nautic/open-55'),
-    mapping('product:seacraft/go')
+    product('fxc', 'mc4', 'MC-4', 'Ram-air personnel parachute system', { status: 'retired' }),
+    product('jfd', 'shadow', 'Shadow', 'Tactical diving rebreather', { status: 'draft' }),
+    product('zodiac-nautic', 'open-55', 'OPEN 5.5', 'Multi-activity rigid inflatable boat'),
+    product('seacraft', 'go', 'GO!', 'Compact diver propulsion vehicle')
   ]);
-  const input = [answer('The MC-4, Shadow and OPEN 6.5 are mentioned. You can go to the team.')];
+  const input = [answer('The MC-4 and Shadow are mentioned. You can go to the team.')];
   assert.equal((await addProductReferences(pool, input))[0].products, undefined);
   assert.equal((await addProductReferences(pool, [answer('Consider the OPEN 5.5.')]))[0].products[0].url, '/zodiac-nautic.html#open-55');
   assert.equal((await addProductReferences(pool, [answer('Consider Seacraft GO!')]))[0].products[0].url, '/seacraft.html#go');
   assert.equal((await addProductReferences(pool, [answer('The OPEN 5.50 is a different model.')]))[0].products, undefined);
   const before = pool.calls;
-  await addProductReferences(pool, [answer('Hello! How can I help?'), { role: 'user', status: 'answered', content: 'MC-4' }]);
+  await addProductReferences(pool, [{ role: 'user', status: 'answered', content: 'MC-4' }]);
   assert.equal(pool.calls, before);
 });
 
-test('staff edits can remove a product page or its manufacturer link', async () => {
-  const record = mapping('product:fxc/mc4');
+test('staff edits can remove a manufacturer link or retire a product', async () => {
+  const record = product('fxc', 'mc4', 'MC-4', 'Ram-air personnel parachute system', {
+    image_name: 'fxc-mc4.jpg',
+    manufacturer_source: 'https://www.fxcguardian.com/product/mc-4-parachute-system/'
+  });
   const pool = cataloguePool([record]);
   const messages = [answer('The FXC MC-4 is a parachute system.')];
-  record.content = record.content.replace(/Manufacturer source: .+/, 'Source reviewed by staff');
+  record.manufacturer_source = '';
   assert.equal((await addProductReferences(pool, messages))[0].products[0].manufacturerUrl, null);
-  record.content = record.content.replace('SSSB product page: /fxc.html#mc4', 'SSSB product page: /fxc.html#mc4-other');
+  record.status = 'retired';
   assert.equal((await addProductReferences(pool, messages))[0].products, undefined);
+});
+
+test('uploaded product images use the media route', async () => {
+  const pool = cataloguePool([
+    product('fxc', 'mc4', 'MC-4', 'Ram-air personnel parachute system', {
+      image_name: '01234567-89ab-4cde-8f01-23456789abcd.webp',
+      image_source: 'upload'
+    })
+  ]);
+  const [result] = await addProductReferences(pool, [answer('The FXC MC-4 is a parachute system.')]);
+  assert.equal(result.products[0].image, '/media/products/01234567-89ab-4cde-8f01-23456789abcd.webp');
 });
 
 test('assistant links require an exact URL in published knowledge', async () => {

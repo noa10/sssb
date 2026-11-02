@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { requiresHandoff, filterAnswer, HANDOFF } = require('../server/ai');
+const { requiresHandoff, filterAnswer, hasCommercialDetail, HANDOFF } = require('../server/ai');
 const { searchKnowledge, extractPdf } = require('../server/knowledge');
 
 // These checks do not replace an integration test against MariaDB 10.5.
@@ -12,6 +12,23 @@ test('commercial claims are routed to staff', () => {
   assert.equal(requiresHandoff('What is the battery runtime?'), false);
   assert.equal(filterAnswer('The price is RM 12,000.'), HANDOFF);
   assert.equal(filterAnswer('The system supports front mounting.'), 'The system supports front mounting.');
+  assert.equal(filterAnswer('Our quality policy covers quality, functionality, delivery and support.'), 'Our quality policy covers quality, functionality, delivery and support.');
+  assert.equal(filterAnswer('We can deliver by Friday.'), HANDOFF);
+  assert.equal(filterAnswer('Delivery is three weeks.'), HANDOFF);
+  assert.equal(filterAnswer('Lead time is three weeks.'), HANDOFF);
+  assert.equal(filterAnswer('For delivery dates, contact our team.'), 'For delivery dates, contact our team.');
+});
+
+test('company policy wording stays available as a reference without exposing commercial details', () => {
+  for (const line of [
+    'Objective: Enhance client satisfaction by continually improving product excellence and services across quality, functionality, delivery and support.',
+    '- Meet and exceed expectations: provide goods and services that comply with, and aim to exceed, client requirements for performance, quality and delivery.',
+    'Continual improvement: year on year in the products sourced, the partners it works with and the support provided after delivery.',
+    'Enquiries: For quotations and availability, contact the SSSB team directly.'
+  ]) assert.equal(hasCommercialDetail(line), false, line);
+  for (const line of ['Delivery is three weeks.', 'Shipped within 14 days.', 'Stock is available.', 'Price on request.']) {
+    assert.equal(hasCommercialDetail(line), true, line);
+  }
 });
 
 test('retrieval includes short product codes and only published records', async () => {

@@ -6,7 +6,9 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Staff workspace | Semenanjung Selatan</title>
   <link rel="icon" href="/assets/img/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/admin/vendor/quill.snow.css">
   <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/vendor/quill.js" defer></script>
   <script src="/admin/admin.js" defer></script>
 </head>
 <body>
@@ -70,6 +72,7 @@
       </div>
       <nav class="workspace-nav" aria-label="Workspace sections">
         <button type="button" id="nav-enquiries" class="nav-button is-active" aria-current="page" data-view="enquiries">Enquiries</button>
+        <button type="button" id="nav-products" class="nav-button" data-view="products">Products</button>
         <button type="button" id="nav-knowledge" class="nav-button" data-view="knowledge">Knowledge</button>
       </nav>
       <p id="global-notice" class="notice" role="status" hidden></p>
@@ -135,7 +138,7 @@
             <div id="knowledge-editor" hidden>
               <div class="detail-header"><div><span class="section-label">Content library</span><h3 id="editor-heading">Add content</h3><p id="editor-subtitle" class="subtle">Add information for review and publication.</p></div><span id="editor-status" class="status" hidden></span></div>
               <form id="knowledge-form" class="editor-form">
-                <div class="field"><label for="knowledge-kind">Content type</label><select id="knowledge-kind" required><option value="company">Company information</option><option value="product">Product</option><option value="document">PDF document</option></select><p id="kind-note" class="field-note" hidden>Document content is extracted from the uploaded PDF and cannot be edited here.</p></div>
+                <div class="field"><label for="knowledge-kind">Content type</label><select id="knowledge-kind" required><option value="company">Company information</option><option value="document">PDF document</option></select><p id="kind-note" class="field-note" hidden>Document content is extracted from the uploaded PDF and cannot be edited here.</p></div>
                 <div class="field"><label for="knowledge-title-input">Title</label><input id="knowledge-title-input" name="title" maxlength="200" required></div>
                 <div class="field"><label for="knowledge-source">Source name <span class="optional">(optional)</span></label><input id="knowledge-source" name="sourceName" maxlength="255"></div>
                 <div id="knowledge-content-field" class="field"><label for="knowledge-content">Content</label><textarea id="knowledge-content" name="content" rows="11" maxlength="30000" required></textarea></div>
@@ -144,6 +147,50 @@
                 <div class="field"><label for="knowledge-status">Publication status</label><select id="knowledge-status" required><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select><p class="field-note">Choose Published to publish this item, or Retired to take it out of use.</p></div>
                 <p id="knowledge-form-notice" class="notice" role="status" hidden></p>
                 <div class="form-actions"><button id="knowledge-save" class="button button--primary" type="submit">Save content</button><button id="knowledge-cancel" class="button button--secondary" type="button">Cancel</button></div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="products-view" class="view" aria-labelledby="products-title" hidden>
+        <div class="view-heading">
+          <div><h2 id="products-title">Products</h2><p>Edit the catalogue shown on the website and used by the AI assistant.</p></div>
+          <button type="button" id="new-product" class="button button--primary">Add product</button>
+        </div>
+        <div class="work-grid">
+          <section class="panel list-panel" aria-labelledby="product-list-title">
+            <div class="panel-heading"><div><h3 id="product-list-title">Product catalogue</h3><p id="product-count" class="subtle">Products</p></div><button id="refresh-products" type="button" class="text-button">Refresh</button></div>
+            <div class="filters">
+              <div class="field field--compact"><label for="product-search">Search products</label><input id="product-search" type="search" placeholder="Name, type or company"></div>
+              <div class="field field--compact"><label for="product-company-filter">Company</label><select id="product-company-filter"><option value="all">All companies</option></select></div>
+              <div class="field field--compact"><label for="product-filter">Status</label><select id="product-filter"><option value="all">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select></div>
+            </div>
+            <div id="product-list-state" class="inline-state" role="status">Loading products…</div>
+            <div id="product-list" class="item-list" aria-label="Product list"></div>
+          </section>
+          <section id="product-detail" class="panel detail-panel" aria-labelledby="product-editor-title" tabindex="-1">
+            <div id="product-placeholder" class="empty-detail"><div class="empty-symbol" aria-hidden="true">+</div><h3 id="product-editor-title">Your product catalogue</h3><p>Select a product to edit it, or add a new product for the website and AI assistant.</p><button id="empty-add-product" class="button button--secondary" type="button">Add product</button></div>
+            <div id="product-detail-state" class="inline-state" role="status" hidden></div>
+            <div id="product-editor" hidden>
+              <div class="detail-header"><div><span class="section-label">Product catalogue</span><h3 id="editor-product-heading">Add product</h3><p id="editor-product-subtitle" class="subtle">Publish information to the website and AI assistant.</p></div><span id="editor-product-status" class="status" hidden></span></div>
+              <form id="product-form" class="editor-form">
+                <div class="field"><label for="product-company">Company</label><select id="product-company" required></select><p class="field-note">Products stay within the existing catalogue companies.</p></div>
+                <div class="field"><label for="product-name">Product name</label><input id="product-name" name="name" maxlength="160" required></div>
+                <div class="field"><label for="product-slug">Page address</label><input id="product-slug" name="slug" maxlength="80" readonly><p id="product-slug-note" class="field-note">The address is generated from the name and cannot be changed later.</p></div>
+                <div class="field"><label for="product-type">Product type</label><input id="product-type" name="productType" maxlength="200" required></div>
+                <div class="field"><label for="product-summary">Summary</label><textarea id="product-summary" name="summary" rows="4" maxlength="2000" required></textarea></div>
+                <div class="field"><span class="field-label">Description</span><div id="product-description" class="rich-editor"></div><p class="field-note">Formatting is cleaned before publication. Product images are uploaded separately below.</p></div>
+                <div class="field"><div class="section-heading"><span class="field-label">Specifications</span><button id="add-spec" type="button" class="text-button">Add specification</button></div><div id="product-specs" class="product-rows"></div></div>
+                <div class="field"><label for="product-spec-note">Specification note <span class="optional">(optional)</span></label><input id="product-spec-note" name="specNote" maxlength="1000"></div>
+                <div class="field"><div class="section-heading"><span class="field-label">Key features</span><button id="add-feature" type="button" class="text-button">Add feature</button></div><div id="product-features" class="product-rows"></div></div>
+                <div class="field"><label for="product-source">Manufacturer source <span class="optional">(optional)</span></label><input id="product-source" name="manufacturerSource" type="url" maxlength="2048" placeholder="https://"><p class="field-note">Only an HTTPS manufacturer page is accepted.</p></div>
+                <div class="field"><label for="product-image">Product image <span class="optional">(optional)</span></label><input id="product-image" name="image" type="file" accept="image/jpeg,image/png,image/webp"><p class="field-note">JPG, PNG or WebP, up to 5 MB. Leave empty to keep the current image.</p><img id="product-image-preview" class="product-image-preview" alt="" hidden></div>
+                <div class="field field--inline"><label class="checkbox-field"><input id="product-photo" name="photo" type="checkbox"> Product photograph (cover crop instead of contain)</label></div>
+                <div class="field"><label for="product-sort-order">Display order</label><input id="product-sort-order" name="sortOrder" type="number" min="0" max="9999" step="1"></div>
+                <div class="field"><label for="product-status">Publication status</label><select id="product-status" required><option value="draft">Draft</option><option value="published">Published</option><option value="retired">Retired</option></select><p class="field-note">Published products appear on the website and in AI answers. Draft and retired products appear only here.</p></div>
+                <p id="product-form-notice" class="notice" role="status" hidden></p>
+                <div class="form-actions"><button id="product-save" class="button button--primary" type="submit">Save product</button><button id="product-cancel" class="button button--secondary" type="button">Cancel</button><a id="product-view-link" class="button button--secondary" target="_blank" rel="noopener noreferrer" hidden>View on site</a></div>
               </form>
             </div>
           </section>

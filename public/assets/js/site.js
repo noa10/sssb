@@ -343,8 +343,13 @@
       '    <span class="chat-visually-hidden chat-resize-feedback" aria-live="polite" aria-atomic="true"></span>',
       '  </div>',
       '  <header class="chat-header">',
-      '    <div><p class="chat-header-label">Semenanjung Selatan</p><h2 id="sssb-chat-title">AI product assistant</h2></div>',
+      '    <div class="chat-brand"><span class="chat-brand-mark" aria-hidden="true">S</span><div><h2 id="sssb-chat-title">SSSB Assistant</h2><p class="chat-header-label">Product information</p></div></div>',
       '    <div class="chat-header-actions">',
+      '      <button class="chat-account-login" type="button">Sign in</button>',
+      '      <div class="chat-account-signed-in" hidden>',
+      '        <button class="chat-account-toggle" type="button" aria-expanded="false" aria-controls="sssb-chat-account-menu"><span class="chat-account-dot" aria-hidden="true"></span>Account<svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>',
+      '        <div class="chat-account-menu" id="sssb-chat-account-menu" hidden><p>Signed in as <strong class="chat-account-email"></strong></p><button class="chat-account-profile" type="button">Edit account details</button><button class="chat-account-refresh" type="button" hidden>Reload conversation</button><button class="chat-account-logout" type="button">Sign out</button></div>',
+      '      </div>',
       '      <button class="chat-fullscreen" type="button" aria-label="Fullscreen chat" aria-pressed="false" aria-controls="sssb-chat-panel" title="Expand chat to fullscreen">',
       '        <svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="chat-expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path class="chat-restore-icon" d="M4 9h5V4m6 0v5h5M4 15h5v5m6 0v-5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       '      </button>',
@@ -354,33 +359,41 @@
       '    </div>',
       '  </header>',
       '  <div class="chat-body">',
-      '    <p class="chat-intro">Ask about our products. For quotations and availability, please contact our team directly.</p>',
-      '    <p class="chat-privacy">Please do not share sensitive, confidential or classified information. Chat messages expire 30 days after the chat starts.</p>',
+      '    <div class="chat-welcome"><span class="chat-avatar" aria-hidden="true">S</span><div><p class="chat-welcome-title">Hi! How can I help?</p><p>Ask about our products and specifications. Our team can help with quotations and availability.</p></div></div>',
       '    <div class="chat-account">',
-      '      <div class="chat-account-guest"><p>Sign in to continue your chat on another device.</p><div class="chat-account-actions"><button class="chat-account-login" type="button">Sign in</button><button class="chat-account-register" type="button">Create account</button></div></div>',
-      '      <div class="chat-account-signed-in" hidden><p>Signed in as <strong class="chat-account-email"></strong></p><button class="chat-account-logout" type="button">Sign out</button></div>',
+      '      <div class="chat-account-guest"><p>Sign in to start a conversation and pick it up again later.</p><button class="chat-account-register" type="button">Create an account</button><div class="chat-guest-existing" hidden><p>To continue your previous chat, sign in or create an account using the same email address.</p><button class="chat-guest-end" type="button">End previous guest chat</button></div></div>',
       '      <form class="chat-account-form" hidden>',
       '        <p class="chat-form-heading chat-account-heading">Sign in</p>',
+      '        <p class="chat-account-description">Continue your conversation with our assistant.</p>',
       '        <div class="chat-fields chat-account-fields">',
+      '          <label class="chat-account-profile-label" for="sssb-account-name" hidden>Full name<input id="sssb-account-name" name="name" autocomplete="name" maxlength="120" data-account-profile></label>',
+      '          <label class="chat-account-profile-label" for="sssb-account-phone" hidden>Phone number<input id="sssb-account-phone" name="phone" type="tel" autocomplete="tel" maxlength="50" data-account-profile></label>',
+      '          <label class="chat-account-profile-label" for="sssb-account-company" hidden>Company<input id="sssb-account-company" name="company" autocomplete="organization" maxlength="160" data-account-profile></label>',
       '          <label for="sssb-account-email">Email address<input id="sssb-account-email" name="email" type="email" autocomplete="email" maxlength="254" required></label>',
       '          <label for="sssb-account-password">Password<input id="sssb-account-password" name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>',
       '          <label class="chat-account-confirm-label" for="sssb-account-confirm" hidden>Confirm password<input id="sssb-account-confirm" name="confirm" type="password" autocomplete="new-password" maxlength="1024"></label>',
       '        </div>',
       '        <p class="chat-account-help" hidden>Use at least 14 characters. Password recovery by email is not available.</p>',
       '        <button class="btn btn--primary chat-submit chat-account-submit" type="submit">Sign in</button>',
-      '        <button class="chat-account-cancel" type="button">Cancel</button>',
+      '        <div class="chat-account-form-actions"><button class="chat-account-switch" type="button">Create an account</button><button class="chat-account-cancel" type="button">Back to chat</button></div>',
+      '      </form>',
+      '      <form class="chat-profile-form" hidden>',
+      '        <p class="chat-form-heading">Account details</p>',
+      '        <p class="chat-profile-help" hidden>Please complete your account details before starting a chat.</p>',
+      '        <div class="chat-fields chat-account-fields">',
+      '          <label for="sssb-profile-name">Full name<input id="sssb-profile-name" name="name" autocomplete="name" maxlength="120" required></label>',
+      '          <label for="sssb-profile-phone">Phone number<input id="sssb-profile-phone" name="phone" type="tel" autocomplete="tel" maxlength="50" required></label>',
+      '          <label for="sssb-profile-company">Company<input id="sssb-profile-company" name="company" autocomplete="organization" maxlength="160" required></label>',
+      '        </div>',
+      '        <button class="btn btn--primary chat-submit" type="submit">Save account details</button>',
+      '        <button class="chat-profile-cancel" type="button">Back to chat</button>',
       '      </form>',
       '    </div>',
       '    <p class="chat-status" role="status" aria-live="polite" hidden></p>',
       '    <button class="chat-refresh" type="button" hidden>Reload conversation</button>',
       '    <form class="chat-start" hidden>',
-      '      <p class="chat-form-heading">Your details</p>',
-      '      <div class="chat-fields">',
-      '        <label for="sssb-chat-name">Full name (required)<input id="sssb-chat-name" name="name" autocomplete="name" required></label>',
-      '        <label for="sssb-chat-email">Email address (required)<input id="sssb-chat-email" name="email" type="email" autocomplete="email" required></label>',
-      '        <label for="sssb-chat-phone">Phone number (required)<input id="sssb-chat-phone" name="phone" type="tel" autocomplete="tel" required></label>',
-      '        <label for="sssb-chat-company">Company (required)<input id="sssb-chat-company" name="company" autocomplete="organization" required></label>',
-      '      </div>',
+      '      <p class="chat-form-heading">Start a new chat</p>',
+      '      <p class="chat-privacy">Please do not share sensitive, confidential or classified information.</p>',
       '      <label class="chat-consent"><input name="consent" type="checkbox" required><span>I understand that my contact details and chat messages are saved for staff review, and my messages are processed by an AI provider. Messages are deleted 30 days after the chat starts; contact details are retained. <strong>(required)</strong></span></label>',
       '      <button class="btn btn--primary chat-submit" type="submit">Start chat</button>',
       '    </form>',
@@ -390,18 +403,17 @@
       '        <p class="chat-empty">Your conversation will appear here.</p>',
       '      </div>',
       '      <form class="chat-message-form">',
-      '        <label for="sssb-chat-message">Your message</label>',
-      '        <textarea id="sssb-chat-message" name="message" rows="3" required></textarea>',
-      '        <button class="btn btn--primary chat-submit" type="submit">Send message</button>',
+      '        <label class="chat-visually-hidden" for="sssb-chat-message">Your message</label>',
+      '        <textarea id="sssb-chat-message" name="message" rows="1" placeholder="Ask a question…" title="Press Enter to send. Press Shift+Enter for a new line." required></textarea>',
+      '        <button class="chat-send" type="submit" aria-label="Send message"><svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 4 16 8-16 8 2-8-2-8Zm2 8h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>',
       '      </form>',
       '      <button class="chat-end" type="button">End chat</button>',
       '    </div>',
-      '    <div class="chat-contact">',
-      '      <p>Contact our team</p>',
+      '    <details class="chat-contact"><summary>Contact our team</summary><div class="chat-contact-links">',
       '      <a class="chat-email" href="mailto:info@semenanjungselatan.com">info@semenanjungselatan.com</a>',
       '      <a class="chat-phone" href="tel:+6072352330">+60 7-235 2330</a>',
       '      <a class="chat-whatsapp" target="_blank" rel="noopener noreferrer" hidden>Open WhatsApp <span class="chat-external">(opens a new tab)</span></a>',
-      '    </div>',
+      '    </div></details>',
       '  </div>',
       '</section>'
     ].join("");
@@ -415,21 +427,41 @@
     var closePanelButton = widget.querySelector(".chat-close");
     var status = widget.querySelector(".chat-status");
     var refresh = widget.querySelector(".chat-refresh");
+    var welcome = widget.querySelector(".chat-welcome");
+    var accountArea = widget.querySelector(".chat-account");
     var accountGuest = widget.querySelector(".chat-account-guest");
+    var guestExisting = widget.querySelector(".chat-guest-existing");
+    var guestEnd = widget.querySelector(".chat-guest-end");
     var accountSignedIn = widget.querySelector(".chat-account-signed-in");
+    var accountToggle = widget.querySelector(".chat-account-toggle");
+    var accountMenu = widget.querySelector(".chat-account-menu");
     var accountEmail = widget.querySelector(".chat-account-email");
     var accountLogin = widget.querySelector(".chat-account-login");
     var accountRegister = widget.querySelector(".chat-account-register");
+    var accountProfile = widget.querySelector(".chat-account-profile");
+    var accountRefresh = widget.querySelector(".chat-account-refresh");
     var accountLogout = widget.querySelector(".chat-account-logout");
     var accountForm = widget.querySelector(".chat-account-form");
     var accountHeading = widget.querySelector(".chat-account-heading");
+    var accountDescription = widget.querySelector(".chat-account-description");
+    var accountName = widget.querySelector("#sssb-account-name");
+    var accountPhone = widget.querySelector("#sssb-account-phone");
+    var accountCompany = widget.querySelector("#sssb-account-company");
+    var accountProfileLabels = widget.querySelectorAll(".chat-account-profile-label");
     var accountEmailInput = widget.querySelector("#sssb-account-email");
     var accountPassword = widget.querySelector("#sssb-account-password");
     var accountConfirm = widget.querySelector("#sssb-account-confirm");
     var accountConfirmLabel = widget.querySelector(".chat-account-confirm-label");
     var accountHelp = widget.querySelector(".chat-account-help");
     var accountSubmit = widget.querySelector(".chat-account-submit");
+    var accountSwitch = widget.querySelector(".chat-account-switch");
     var accountCancel = widget.querySelector(".chat-account-cancel");
+    var profileForm = widget.querySelector(".chat-profile-form");
+    var profileName = widget.querySelector("#sssb-profile-name");
+    var profilePhone = widget.querySelector("#sssb-profile-phone");
+    var profileCompany = widget.querySelector("#sssb-profile-company");
+    var profileHelp = widget.querySelector(".chat-profile-help");
+    var profileCancel = widget.querySelector(".chat-profile-cancel");
     var startForm = widget.querySelector(".chat-start");
     var startButton = startForm.querySelector('button[type="submit"]');
     var conversation = widget.querySelector(".chat-conversation");
@@ -451,8 +483,10 @@
     var lastFocused = null;
     var active = null;
     var customer = null;
+    var guestConversation = null;
+    var profileMode = false;
     var accountMode = null;
-    var conversationEmail = "";
+    var accountMenuOpen = false;
     var currentMessages = [];
     var conversationId = null;
     var messageSignature = "";
@@ -466,6 +500,9 @@
     var pendingDraft = null;
     var contextApplied = false;
     var restoreAfterPendingLoad = false;
+    var seenAssistantIds = Object.create(null);
+    var animateIncoming = false;
+    var activeReveal = null;
 
     var catalogue = {
       "jfd": "JFD products",
@@ -495,6 +532,24 @@
       "safe-at-sea/elecorunner": "Safe at Sea ElEcoRunner"
     };
 
+    document.addEventListener("sssb:catalogue", function (event) {
+      var detail = event.detail;
+      if (!detail || !Array.isArray(detail.companies)) return;
+      detail.companies.forEach(function (company) {
+        if (!company || typeof company.key !== "string") return;
+        catalogue[company.key] = company.name + " products";
+        (company.products || []).forEach(function (product) {
+          if (product && typeof product.key === "string") {
+            catalogue[company.key + "/" + product.key] = company.name + " " + product.name;
+          }
+        });
+      });
+      if (contextApplied && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
+        var enquiry = catalogueEnquiry();
+        if (enquiry) messageInput.value = enquiry;
+      }
+    });
+
     function catalogueEnquiry() {
       if (document.body.dataset.page !== "contact") return "";
       var params = new URLSearchParams(window.location.search);
@@ -506,11 +561,12 @@
         : "";
     }
 
-    function setStatus(text, isError) {
+    function setStatus(text, isError, visuallyQuiet) {
       var nextText = text || "";
       if (status.textContent !== nextText) status.textContent = nextText;
       status.hidden = !text;
       status.classList.toggle("is-error", !!isError);
+      status.classList.toggle("is-quiet", !!visuallyQuiet);
     }
 
     function stopPolling() {
@@ -524,24 +580,60 @@
       });
     }
 
+    function hasSavedDetails(account) {
+      account = account || customer;
+      return !!account && ["name", "email", "phone", "company"].every(function (field) {
+        return typeof account[field] === "string" && account[field].trim();
+      });
+    }
+
+    function fillProfileForm() {
+      profileName.value = customer && customer.name || "";
+      profilePhone.value = customer && customer.phone || "";
+      profileCompany.value = customer && customer.company || "";
+    }
+
     function updateControls() {
       var accountBusy = busy || loading || stale || hasPendingMessage();
-      panel.classList.toggle("has-conversation", active === true && !accountMode);
+      var completeProfile = hasSavedDetails();
+      var showProfile = !!customer && (profileMode || (active === false && !completeProfile));
+      panel.classList.toggle("has-conversation", active === true && !accountMode && !showProfile);
+      panel.classList.toggle("has-account-view", !!accountMode || showProfile);
+      welcome.hidden = !!accountMode || showProfile || active === true;
+      accountArea.hidden = !!customer && !showProfile;
       accountGuest.hidden = !!customer || !!accountMode;
+      guestExisting.hidden = !guestConversation || !!customer;
+      guestEnd.disabled = accountBusy;
+      accountLogin.hidden = !!customer || !!accountMode;
       accountSignedIn.hidden = !customer;
+      if (!customer || accountBusy) accountMenuOpen = false;
+      accountMenu.hidden = !accountMenuOpen;
+      accountToggle.setAttribute("aria-expanded", String(accountMenuOpen));
+      accountToggle.setAttribute("aria-label", customer ? "Account menu, signed in as " + customer.email : "Account menu");
       accountForm.hidden = !!customer || !accountMode;
       accountEmail.textContent = customer ? customer.email : "";
       accountLogin.disabled = accountBusy;
       accountRegister.disabled = accountBusy;
+      accountToggle.disabled = accountBusy;
+      accountProfile.disabled = accountBusy;
+      accountProfile.hidden = showProfile;
+      accountRefresh.hidden = active !== true;
+      accountRefresh.disabled = accountBusy;
       accountLogout.disabled = accountBusy;
-      accountForm.querySelectorAll("input,button").forEach(function (control) { control.disabled = accountBusy; });
-      startForm.hidden = active !== false || !!accountMode;
-      conversation.hidden = active !== true || !!accountMode;
+      accountForm.querySelectorAll("input,button").forEach(function (control) {
+        control.disabled = accountBusy || (control.hasAttribute("data-account-profile") && accountMode !== "register");
+      });
+      profileForm.hidden = !showProfile;
+      profileHelp.hidden = completeProfile || active === true;
+      profileCancel.hidden = !completeProfile && active === false;
+      profileForm.querySelectorAll("input,button").forEach(function (control) { control.disabled = accountBusy; });
+      startForm.hidden = !customer || active !== false || !!accountMode || showProfile;
+      conversation.hidden = !customer || active !== true || !!accountMode || showProfile;
       startButton.disabled = busy || loading || stale;
       sendButton.disabled = busy || loading || stale || hasPendingMessage();
       messageInput.disabled = busy || loading || stale || hasPendingMessage();
       endButton.disabled = busy || loading || stale;
-      refresh.hidden = !stale && active !== true;
+      refresh.hidden = !stale && !(active === true && hasPendingMessage());
       refresh.disabled = busy || loading;
       startButton.textContent = busy && active === false ? "Starting…" : "Start chat";
     }
@@ -553,6 +645,113 @@
       if (enquiry && !messageInput.value) messageInput.value = enquiry;
     }
 
+    function prefersReducedMotion() {
+      return typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function scrollMessageHistory() {
+      if (isOpen) history.scrollTop = history.scrollHeight;
+    }
+
+    function finishReveal(reveal) {
+      if (!reveal || activeReveal !== reveal) return;
+      if (reveal.handle !== null) window.cancelAnimationFrame(reveal.handle);
+      activeReveal = null;
+      reveal.item.classList.remove("is-revealing");
+      reveal.item.removeAttribute("aria-busy");
+      if (rendererReady) window.SSSBChatContent.render(reveal.content, reveal.message, window.location.href);
+      else reveal.paragraph.textContent = reveal.text;
+      scrollMessageHistory();
+    }
+
+    function cancelReveal() {
+      if (!activeReveal) return;
+      var reveal = activeReveal;
+      if (reveal.handle !== null) window.cancelAnimationFrame(reveal.handle);
+      activeReveal = null;
+      reveal.item.classList.remove("is-revealing");
+      reveal.item.removeAttribute("aria-busy");
+    }
+
+    function revealMessage(item, content, message) {
+      var text = typeof message.content === "string" ? message.content : "";
+      if (!text || prefersReducedMotion()) return;
+      if (activeReveal) finishReveal(activeReveal);
+      var characters = Array.from(text);
+      var paragraph = document.createElement("p");
+      paragraph.className = "chat-message-reveal";
+      content.replaceChildren(paragraph);
+      item.classList.add("is-revealing");
+      item.setAttribute("aria-busy", "true");
+      var reveal = {
+        item: item,
+        content: content,
+        message: message,
+        text: text,
+        paragraph: paragraph,
+        handle: null
+      };
+      activeReveal = reveal;
+      var started = 0;
+      var duration = Math.min(1600, Math.max(320, characters.length * 7));
+      function frame(now) {
+        if (activeReveal !== reveal) return;
+        if (!started) started = now;
+        var progress = Math.min(1, (now - started) / duration);
+        var count = Math.max(1, Math.round(progress * characters.length));
+        paragraph.textContent = characters.slice(0, count).join("");
+        scrollMessageHistory();
+        if (progress < 1) reveal.handle = window.requestAnimationFrame(frame);
+        else finishReveal(reveal);
+      }
+      reveal.handle = window.requestAnimationFrame(frame);
+    }
+
+    function appendOutgoingMessage(text) {
+      var item = document.createElement("li");
+      item.className = "chat-message chat-message--user chat-message--outgoing";
+      var label = document.createElement("strong");
+      label.textContent = "You";
+      var body = document.createElement("div");
+      body.className = "chat-message-body";
+      var paragraph = document.createElement("p");
+      paragraph.textContent = text;
+      body.appendChild(paragraph);
+      item.appendChild(label);
+      item.appendChild(body);
+      messages.appendChild(item);
+      empty.hidden = true;
+      scrollMessageHistory();
+    }
+
+    function removeThinking() {
+      var item = messages.querySelector(".chat-message--thinking");
+      if (item) item.remove();
+    }
+
+    function showThinking() {
+      removeThinking();
+      var item = document.createElement("li");
+      item.className = "chat-message chat-message--assistant chat-message--thinking chat-message--outgoing";
+      item.setAttribute("aria-label", "AI assistant is typing");
+      var label = document.createElement("strong");
+      label.textContent = "AI assistant";
+      var body = document.createElement("div");
+      body.className = "chat-message-body";
+      var dots = document.createElement("span");
+      dots.className = "chat-typing";
+      dots.setAttribute("aria-hidden", "true");
+      for (var index = 0; index < 3; index += 1) dots.appendChild(document.createElement("span"));
+      body.appendChild(dots);
+      item.appendChild(label);
+      item.appendChild(body);
+      item.dataset.thinking = "true";
+      messages.appendChild(item);
+      empty.hidden = true;
+      scrollMessageHistory();
+    }
+
     function renderMessages() {
       var signature = JSON.stringify([rendererReady, currentMessages]);
       if (signature === messageSignature) return;
@@ -561,8 +760,15 @@
       var visibleMessages = currentMessages.filter(function (message) {
         return message && (message.role === "user" || message.role === "assistant");
       });
+      var lastAssistantIndex = -1;
+      visibleMessages.forEach(function (message, index) {
+        if (message.role === "assistant") lastAssistantIndex = index;
+      });
       var additions = document.createDocumentFragment();
       visibleMessages.forEach(function (message, index) {
+        var messageId = String(message.id);
+        var isNewAssistant = message.role === "assistant" && !seenAssistantIds[messageId];
+        seenAssistantIds[messageId] = true;
         var item = messages.children[index];
         var itemSignature = JSON.stringify([rendererReady, message.id, message.role, message.content, message.status, message.products, message.approvedLinks]);
         if (item && item.dataset.signature === itemSignature) return;
@@ -574,7 +780,12 @@
           item.appendChild(body);
           additions.appendChild(item);
         }
+        if (activeReveal && activeReveal.item === item) cancelReveal();
         item.dataset.signature = itemSignature;
+        if (item.dataset.thinking) {
+          delete item.dataset.thinking;
+          item.removeAttribute("aria-label");
+        }
         item.className = "chat-message chat-message--" + message.role;
         var label = item.querySelector("strong");
         var content = item.querySelector(".chat-message-body");
@@ -587,6 +798,10 @@
           var plain = document.createElement("p");
           plain.textContent = contentText;
           content.replaceChildren(plain);
+        }
+        if (isNewAssistant && animateIncoming && index === lastAssistantIndex && message.status !== "pending") {
+          animateIncoming = false;
+          revealMessage(item, content, message);
         }
         var messageStatus = item.querySelector(".chat-message-status");
         if (message.status === "pending" || message.status === "failed") {
@@ -712,24 +927,35 @@
         }
         if (sequence !== loadSequence) return false;
         if (data.customer != null && (!data.customer || typeof data.customer.email !== "string")) throw new Error("Unexpected customer response");
+        if ((data.active && !data.customer) ||
+            (data.guestConversation != null && (data.customer || data.active || typeof data.guestConversation.email !== "string"))) {
+          throw new Error("Unexpected chat ownership");
+        }
         var previousCustomer = customer;
         customer = data.customer || null;
+        guestConversation = data.guestConversation || null;
         if (customer) {
           accountMode = null;
           accountForm.reset();
+          if (!previousCustomer || previousCustomer.email !== customer.email) {
+            profileMode = false;
+            fillProfileForm();
+            startForm.reset();
+          } else if (!profileMode && hasSavedDetails(previousCustomer) && !hasSavedDetails()) {
+            fillProfileForm();
+          }
+        } else if (previousCustomer) {
+          startForm.reset();
+          profileForm.reset();
+          profileMode = false;
         }
-        conversationEmail = data.active && typeof data.conversation.email === "string" ? data.conversation.email : "";
-        var startEmail = startForm.querySelector('[name="email"]');
-        if (customer) {
-          startEmail.value = customer.email;
-          startEmail.readOnly = true;
-        } else {
-          startEmail.readOnly = false;
-          if (previousCustomer && startEmail.value === previousCustomer.email) startEmail.value = "";
-        }
+        if (active === true && !data.active) startForm.querySelector('[name="consent"]').checked = false;
         var nextConversationId = data.active ? String(data.conversation.id) : null;
         if (nextConversationId !== conversationId) {
           messageSignature = "";
+          cancelReveal();
+          seenAssistantIds = Object.create(null);
+          animateIncoming = false;
           messages.textContent = "";
           empty.hidden = false;
           if (conversationId !== null) {
@@ -934,6 +1160,7 @@
     function closePanel() {
       if (!isOpen) return;
       stopResize();
+      closeAccountMenu(false);
       if (isFullscreen) setFullscreen(false);
       isOpen = false;
       restoreAfterPendingLoad = false;
@@ -993,7 +1220,13 @@
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        if (isFullscreen) setFullscreen(false);
+        if (accountMenuOpen) closeAccountMenu(true);
+        else if (accountMode) setAccountMode(null);
+        else if (profileMode && hasSavedDetails()) {
+          profileMode = false;
+          updateControls();
+          accountToggle.focus();
+        } else if (isFullscreen) setFullscreen(false);
         else closePanel();
         return;
       }
@@ -1022,6 +1255,10 @@
       window.visualViewport.addEventListener("scroll", layoutPanel);
     }
     refresh.addEventListener("click", function () { refreshCurrent(false); });
+    accountRefresh.addEventListener("click", function () {
+      closeAccountMenu(true);
+      refreshCurrent(false);
+    });
     document.querySelectorAll("[data-open-chat]").forEach(function (button) {
       button.hidden = false;
       button.addEventListener("click", function () { openPanel(button); });
@@ -1051,7 +1288,6 @@
     function clearChatView() {
       active = null;
       conversationId = null;
-      conversationEmail = "";
       currentMessages = [];
       messages.textContent = "";
       empty.hidden = false;
@@ -1063,24 +1299,69 @@
 
     function setAccountMode(mode) {
       if (busy || loading || stale || hasPendingMessage()) return;
+      var previousEmail = accountMode ? accountEmailInput.value : "";
       accountMode = mode;
       accountForm.reset();
-      accountEmailInput.value = conversationEmail || startForm.querySelector('[name="email"]').value || "";
-      accountHeading.textContent = mode === "register" ? "Create account" : "Sign in";
-      accountSubmit.textContent = mode === "register" ? "Create account" : "Sign in";
-      accountPassword.autocomplete = mode === "register" ? "new-password" : "current-password";
+      var saved = guestConversation || {};
+      accountEmailInput.value = previousEmail || saved.email || "";
+      var registering = mode === "register";
+      accountProfileLabels.forEach(function (label) { label.hidden = !registering; });
+      accountName.required = registering;
+      accountPhone.required = registering;
+      accountCompany.required = registering;
+      if (registering) {
+        accountName.value = saved.name || "";
+        accountPhone.value = saved.phone || "";
+        accountCompany.value = saved.company || "";
+      }
+      accountHeading.textContent = registering ? "Create account" : "Sign in";
+      accountDescription.textContent = registering
+        ? "Create an account to start and return to your conversations."
+        : "Continue your conversation with our assistant.";
+      accountSubmit.textContent = registering ? "Create account" : "Sign in";
+      accountSwitch.textContent = registering ? "Already have an account? Sign in" : "New here? Create an account";
+      accountPassword.autocomplete = registering ? "new-password" : "current-password";
       accountPassword.minLength = mode === "register" ? 14 : 1;
       accountConfirmLabel.hidden = mode !== "register";
       accountConfirm.required = mode === "register";
       accountHelp.hidden = mode !== "register";
       setStatus("", false);
       updateControls();
-      if (mode) accountEmailInput.focus();
+      if (mode) (registering ? accountName : accountEmailInput).focus();
+      else accountLogin.focus();
     }
+
+    function closeAccountMenu(restoreFocus) {
+      if (!accountMenuOpen) return;
+      accountMenuOpen = false;
+      accountMenu.hidden = true;
+      accountToggle.setAttribute("aria-expanded", "false");
+      if (restoreFocus) accountToggle.focus();
+    }
+
+    guestEnd.addEventListener("click", async function () {
+      if (busy || loading || stale || customer || !guestConversation) return;
+      busy = true;
+      updateControls();
+      setStatus("Ending your previous guest chat…", false);
+      try { await postJSON("/api/chat/close", {}); } catch (error) { /* Refresh to confirm the chat state. */ }
+      var loaded = await loadCurrent();
+      finishOperation();
+      if (loaded) setStatus(guestConversation ? "We could not end the previous chat. Please try again." : "Previous guest chat ended. Sign in or create an account to start a chat.", !!guestConversation);
+    });
 
     accountLogin.addEventListener("click", function () { setAccountMode("login"); });
     accountRegister.addEventListener("click", function () { setAccountMode("register"); });
+    accountSwitch.addEventListener("click", function () { setAccountMode(accountMode === "register" ? "login" : "register"); });
     accountCancel.addEventListener("click", function () { setAccountMode(null); });
+    accountToggle.addEventListener("click", function () {
+      if (accountToggle.disabled) return;
+      accountMenuOpen = !accountMenuOpen;
+      updateControls();
+    });
+    document.addEventListener("pointerdown", function (event) {
+      if (accountMenuOpen && !accountSignedIn.contains(event.target)) closeAccountMenu(false);
+    });
     accountForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       if (!accountMode || busy || loading || stale || hasPendingMessage() || !accountForm.reportValidity()) return;
@@ -1091,14 +1372,31 @@
       }
       var mode = accountMode;
       var failure = "";
+      var profile = null;
+      if (mode === "register") {
+        profile = {
+          name: accountName.value.trim(),
+          phone: accountPhone.value.trim(),
+          company: accountCompany.value.trim()
+        };
+        if (!profile.name || !profile.phone || !profile.company) {
+          setStatus("Enter your name, phone number and company.", true);
+          (!profile.name ? accountName : !profile.phone ? accountPhone : accountCompany).focus();
+          return;
+        }
+      }
       busy = true;
       stopPolling();
       updateControls();
       setStatus(mode === "register" ? "Creating account…" : "Signing in…", false);
       try {
-        await postJSON(mode === "register" ? "/api/customer/register" : "/api/customer/login", {
-          email: accountEmailInput.value.trim(), password: accountPassword.value
-        });
+        var payload = { email: accountEmailInput.value.trim(), password: accountPassword.value };
+        if (profile) {
+          payload.name = profile.name;
+          payload.phone = profile.phone;
+          payload.company = profile.company;
+        }
+        await postJSON(mode === "register" ? "/api/customer/register" : "/api/customer/login", payload);
       } catch (error) {
         failure = error.data && typeof error.data.error === "string" ? error.data.error : "We could not sign you in. Please try again.";
       }
@@ -1109,7 +1407,9 @@
       if (loaded && customer) {
         accountMode = null;
         accountForm.reset();
-        setStatus(active ? "Signed in. Your chat is ready." : "Signed in. You can start a chat.", false);
+        setStatus(active ? "Signed in. Your chat is ready." : hasSavedDetails()
+          ? "Signed in. You can start a chat."
+          : "Signed in. Complete your account details to start a chat.", false, active);
       } else if (loaded) {
         accountPassword.value = "";
         accountConfirm.value = "";
@@ -1122,6 +1422,7 @@
       busy = true;
       stopPolling();
       clearChatView();
+      profileMode = false;
       updateControls();
       setStatus("Signing out…", false);
       try { await postJSON("/api/customer/logout", {}); } catch (error) { /* Refresh to confirm the session state. */ }
@@ -1130,18 +1431,54 @@
       finishOperation();
     });
 
+    accountProfile.addEventListener("click", function () {
+      if (busy || loading || stale || hasPendingMessage() || !customer) return;
+      closeAccountMenu(false);
+      fillProfileForm();
+      profileMode = true;
+      setStatus("", false);
+      updateControls();
+      profileName.focus();
+    });
+    profileCancel.addEventListener("click", function () {
+      if (busy || loading || stale) return;
+      profileMode = false;
+      setStatus("", false);
+      updateControls();
+      accountToggle.focus();
+    });
+    profileForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (busy || loading || stale || !customer || !profileForm.reportValidity()) return;
+      var profile = { name: profileName.value.trim(), phone: profilePhone.value.trim(), company: profileCompany.value.trim() };
+      if (!profile.name || !profile.phone || !profile.company) {
+        setStatus("Enter your name, phone number and company.", true);
+        (!profile.name ? profileName : !profile.phone ? profilePhone : profileCompany).focus();
+        return;
+      }
+      busy = true;
+      updateControls();
+      setStatus("Saving account details…", false);
+      try {
+        var result = await postJSON("/api/customer/profile", profile);
+        if (!result || !result.authenticated || !result.customer || typeof result.customer.email !== "string") {
+          throw new Error("Unexpected customer response");
+        }
+        customer = result.customer;
+        profileMode = false;
+        fillProfileForm();
+        setStatus("Account details saved.", false);
+      } catch (error) {
+        if (error.status === 401) await loadCurrent();
+        setStatus(error.data && typeof error.data.error === "string" ? error.data.error : "We could not save your account details. Please try again.", true);
+      } finally {
+        finishOperation();
+      }
+    });
+
     startForm.addEventListener("submit", async function (event) {
       event.preventDefault();
-      if (busy || loading || stale || active !== false || !startForm.reportValidity()) return;
-      var fields = ["name", "email", "phone", "company"];
-      for (var i = 0; i < fields.length; i += 1) {
-        var field = startForm.querySelector('[name="' + fields[i] + '"]');
-        if (!field.value.trim()) {
-          field.focus();
-          setStatus("Enter your name, email, phone number and company before starting chat.", true);
-          return;
-        }
-      }
+      if (busy || loading || stale || !customer || !hasSavedDetails() || active !== false || !startForm.reportValidity()) return;
       busy = true;
       stopPolling();
       updateControls();
@@ -1149,10 +1486,6 @@
       var started = false;
       try {
         var result = await postJSON("/api/chat/start", {
-          name: startForm.querySelector('[name="name"]').value.trim(),
-          email: startForm.querySelector('[name="email"]').value.trim(),
-          phone: startForm.querySelector('[name="phone"]').value.trim(),
-          company: startForm.querySelector('[name="company"]').value.trim(),
           consent: startForm.querySelector('[name="consent"]').checked
         });
         if (!result || result.active !== true || !result.conversation || !Array.isArray(result.messages)) {
@@ -1160,7 +1493,7 @@
         }
         active = true;
         conversationId = String(result.conversation.id);
-        conversationEmail = result.conversation.email;
+        if (result.customer) customer = result.customer;
         messages.textContent = "";
         empty.hidden = false;
         messageSignature = "";
@@ -1169,15 +1502,27 @@
         renderMessages();
         applyCatalogueContext();
         started = true;
-        setStatus("Chat started. You can now send a message.", false);
+        setStatus("Chat started. You can now send a message.", false, true);
       } catch (error) {
         var loaded = await loadCurrent();
         if (loaded) {
-          setStatus(active ? "Your existing chat is ready." : "We could not start the chat. Please try again or contact our team.", !active);
+          var failure = error.data && typeof error.data.error === "string" ? error.data.error : "We could not start the chat. Please try again or contact our team.";
+          setStatus(active ? "Your existing chat is ready." : failure, !active);
         }
       } finally {
         finishOperation();
         if (started && isOpen && !messageInput.disabled) messageInput.focus();
+      }
+    });
+
+    messageInput.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+      event.preventDefault();
+      if (busy || loading || stale || active !== true || hasPendingMessage()) return;
+      if (typeof messageForm.requestSubmit === "function") {
+        messageForm.requestSubmit();
+      } else {
+        messageForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
       }
     });
 
@@ -1202,7 +1547,10 @@
       busy = true;
       stopPolling();
       updateControls();
-      setStatus("Sending message and waiting for an AI response…", false);
+      appendOutgoingMessage(value);
+      showThinking();
+      animateIncoming = true;
+      setStatus("Sending message…", false, true);
       var result = null;
       var savedFailure = false;
       try {
@@ -1215,6 +1563,7 @@
         result = null;
       }
       var loaded = await loadCurrent();
+      if (!loaded) removeThinking();
       finishOperation();
       if (loaded) {
         if (savedFailure) {
@@ -1226,7 +1575,7 @@
         } else if (result.status === "failed") {
           setStatus("The AI response is unavailable. Please contact our team directly.", true);
         } else {
-          setStatus(hasPendingMessage() ? "Waiting for an AI response…" : "Response received.", false);
+          setStatus(hasPendingMessage() ? "Waiting for an AI response…" : "Response received.", false, !hasPendingMessage());
         }
         if (isOpen && !messageInput.disabled) messageInput.focus();
         schedulePendingRefresh();
@@ -1253,7 +1602,6 @@
       if (loaded) {
         if (!active) {
           startForm.reset();
-          if (customer) startForm.querySelector('[name="email"]').value = customer.email;
           messageInput.value = "";
           pendingDraft = null;
           contextApplied = false;

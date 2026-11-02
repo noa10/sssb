@@ -6,11 +6,14 @@ const helmet = require('helmet');
 const multer = require('multer');
 const { createProvider, requiresHandoff, filterAnswer, HANDOFF, UNKNOWN } = require('./ai');
 const { indexChunks, extractPdf, searchKnowledge } = require('./knowledge');
-const { createCustomerService } = require('./customer');
+const { createCustomerService, customerProfile, validProfile } = require('./customer');
 const { RETENTION_DAYS } = require('./retention');
 const { isOneTypo } = require('./text');
 const { addProductReferences } = require('./product-references');
 const { addApprovedLinks } = require('./approved-links');
+const { listAdminProducts, getAdminProduct, createProduct, updateProduct, publicCatalogue } = require('./catalogue-products');
+const { storeProductImage, deleteProductImage, PRODUCT_IMAGE, mediaType, productImageDir } = require('./images');
+const catalogueMeta = require('./catalogue-meta');
 const { digest, token, cookies, cookieOptions, clearCookie, csrfFor, issueCsrf, staffAuth, consumeLimit, verifyPassword, COOKIE_SESSION, COOKIE_VISITOR } = require('./security');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -43,10 +46,21 @@ function greetingReply(message) {
 }
 const clean = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+function productPayload(body) {
+  if (body && typeof body.payload === 'string') {
+    try { return JSON.parse(body.payload); } catch {
+      const error = new Error('The product details are invalid.');
+      error.status = 400;
+      error.publicMessage = error.message;
+      throw error;
+    }
+  }
+  return body && typeof body === 'object' ? body : {};
+}
 const publicConversation = (row) => ({ id: row.id, name: row.name, email: row.email, phone: row.phone, company: row.company, createdAt: row.created_at });
 const staffConversation = (row) => ({ ...publicConversation(row), status: row.status, createdAt: row.created_at, updatedAt: row.updated_at, messageCount: Number(row.message_count || 0), messagesExpired: Boolean(Number(row.messages_expired || 0)) });
 const publicMessage = (row) => ({ id: String(row.id), role: row.role, content: row.content, status: row.status, createdAt: row.created_at });
-const knowledgeItem = (row) => ({ id: String(row.id), title: row.title, kind: row.kind, content: row.content, sourceName: row.source_name, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at });
+const knowledgeItem = (row) => ({ id: String(row.id), title: row.title, kind: row.kind, content: row.content, sourceName: row.source_name, status: row.status, managedProductId: row.catalogue_product_id == null ? null : String(row.catalogue_product_id), createdAt: row.created_at, updatedAt: row.updated_at });
 
 function config(env) {
   const production = env.NODE_ENV === 'production';
@@ -71,6 +85,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
   app.use(express.json({ limit: '64kb', strict: true }));
   const protectedStaff = staffAuth(pool);
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 4, fieldSize: 1024 } });
+  const productUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 2, fieldSize: 96 * 1024 } });
   const limit = async (key, count, seconds) => {
     if (!await consumeLimit(pool, key, count, seconds)) {
       const error = new Error('Too many requests. Please try again later.');
@@ -93,63 +108,72 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
   app.get('/api/csrf', issueCsrf);
   customers.mount(app, csrf, limit);
   app.get('/api/public/config', (req, res) => res.json({ contactEmail: settings.contactEmail, whatsappUrl: settings.whatsappUrl }));
+  app.get('/api/catalogue', asyncRoute(async (req, res) => {
+    try {
+      res.json(await publicCatalogue(pool));
+    } catch (error) {
+      if (error.code === 'ER_NO_SUCH_TABLE') return res.status(503).json({ error: 'The catalogue is not available yet.' });
+      throw error;
+    }
+  }));
   app.get('/api/chat/current', asyncRoute(async (req, res) => {
     const account = await customers.customer(req);
     const row = await customers.conversation(req, account);
-    const customer = account ? { email: account.email } : null;
+    const customer = account ? customers.publicCustomer(account) : null;
     if (!row) return res.json({ active: false, customer });
-    if (!account && row.created_at) {
-      const lifetime = RETENTION_DAYS * 86400 * 1000;
-      const remaining = Math.min(lifetime, new Date(row.created_at).getTime() + lifetime - Date.now());
-      if (Number.isFinite(remaining) && remaining > 0) {
-        res.cookie(COOKIE_VISITOR, cookies(req)[COOKIE_VISITOR], cookieOptions(remaining));
+    if (!account) {
+      if (row.created_at) {
+        const lifetime = RETENTION_DAYS * 86400 * 1000;
+        const remaining = Math.min(lifetime, new Date(row.created_at).getTime() + lifetime - Date.now());
+        if (Number.isFinite(remaining) && remaining > 0) {
+          res.cookie(COOKIE_VISITOR, cookies(req)[COOKIE_VISITOR], cookieOptions(remaining));
+        }
       }
+      return res.json({ active: false, customer: null, guestConversation: publicConversation(row) });
     }
     await pool.execute("UPDATE messages SET status='failed' WHERE conversation_id=? AND status='pending' AND created_at<DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 2 MINUTE)", [row.id]);
     const messages = await addApprovedLinks(pool, await addProductReferences(pool, await messagesFor(row.id)));
     res.json({ active: true, customer, conversation: publicConversation(row), messages });
   }));
   app.post('/api/chat/start', csrf, asyncRoute(async (req, res) => {
-    await limit(`start:${req.ip}`, 12, 3600);
-    const { name, email, phone, company, consent } = req.body || {};
-    if (typeof name !== 'string' || !name.trim() || name.length > 120 ||
-        typeof email !== 'string' || email.length > 254 || !EMAIL.test(email.trim()) ||
-        typeof phone !== 'string' || !phone.trim() || phone.length > 50 ||
-        typeof company !== 'string' || !company.trim() || company.length > 160 || consent !== true) {
-      return res.status(400).json({ error: 'Enter your name, valid email, phone and company, and agree to the notice.' });
-    }
     const account = await customers.customer(req);
-    if (account && account.email !== email.trim().toLowerCase()) {
-      return res.status(400).json({ error: 'Use the email address for your customer account.' });
-    }
-    if (await customers.conversation(req, account)) return res.status(409).json({ error: 'An active conversation already exists.' });
+    if (!account) return res.status(401).json({ error: 'Sign in or create an account to start a chat.' });
+    if (req.body?.consent !== true) return res.status(400).json({ error: 'Please agree to the notice before starting a chat.' });
+    await limit(`start:${req.ip}`, 12, 3600);
+    if (await customers.activeForCustomer(account.id)) return res.status(409).json({ error: 'An active conversation already exists.' });
     const id = crypto.randomUUID();
     const secret = token();
-    const values = [id, digest(secret), name.trim(), email.trim(), phone.trim(), company.trim(), '2026-11-02'];
     const insert = `INSERT INTO conversations (id,visitor_token_hash,visitor_expires_at,name,email,phone,company,consent_version)
                     VALUES (?,?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 DAY),?,?,?,?,?)`;
     const conn = await pool.getConnection();
     let welcomeId;
+    let details;
     try {
       await conn.beginTransaction();
-      if (account) {
-        const [locked] = await conn.execute('SELECT id FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE', [account.id]);
-        if (!locked.length) { await conn.commit(); return res.status(401).json({ error: 'Sign in again.' }); }
-        if (await customers.activeForCustomer(account.id, conn)) {
-          await conn.commit();
-          return res.status(409).json({ error: 'An active conversation already exists.' });
-        }
+      const [locked] = await conn.execute(
+        'SELECT id,email,name,phone,company FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE', [account.id]
+      );
+      if (!locked.length) { await conn.commit(); return res.status(401).json({ error: 'Sign in again.' }); }
+      if (await customers.activeForCustomer(account.id, conn)) {
+        await conn.commit();
+        return res.status(409).json({ error: 'An active conversation already exists.' });
       }
-      await conn.execute(insert, values);
-      if (account) await conn.execute('INSERT INTO customer_conversations (conversation_id,customer_id) VALUES (?,?)', [id, account.id]);
+      const profile = customerProfile(locked[0]);
+      if (!validProfile(profile)) {
+        await conn.commit();
+        return res.status(409).json({ error: 'Complete your account details before starting a chat.', code: 'PROFILE_INCOMPLETE' });
+      }
+      details = { email: locked[0].email, ...profile };
+      await conn.execute(insert, [id, digest(secret), details.name, details.email, details.phone, details.company, '2026-11-02']);
+      await conn.execute('INSERT INTO customer_conversations (conversation_id,customer_id) VALUES (?,?)', [id, account.id]);
       const [welcome] = await conn.execute("INSERT INTO messages (conversation_id,role,content,status) VALUES (?,'assistant',?,'answered')", [id, WELCOME_REPLY]);
       welcomeId = welcome.insertId;
       await conn.commit();
     } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
-    if (!account) res.cookie(COOKIE_VISITOR, secret, cookieOptions(30 * 86400 * 1000));
     res.status(201).json({
       active: true,
-      conversation: { id, name: name.trim(), email: email.trim(), phone: phone.trim(), company: company.trim() },
+      customer: details,
+      conversation: { id, ...details },
       messages: [{ id: String(welcomeId), role: 'assistant', content: WELCOME_REPLY, status: 'answered' }]
     });
   }));
@@ -160,7 +184,9 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     res.json({ ok: true });
   }));
   app.post('/api/chat/messages', csrf, asyncRoute(async (req, res) => {
-    const row = await visitor(req);
+    const account = await customers.customer(req);
+    if (!account) return res.status(401).json({ error: 'Sign in to continue your chat.' });
+    const row = await customers.activeForCustomer(account.id);
     if (!row) return res.status(401).json({ error: 'Start a conversation first.' });
     const { message, requestId } = req.body || {};
     const normalizedMessage = typeof message === 'string' ? message.trim() : '';
@@ -315,18 +341,19 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
   }));
   app.get('/api/admin/knowledge', protectedStaff, asyncRoute(async (req, res) => {
     const [counts] = await pool.execute('SELECT COUNT(*) AS total FROM knowledge_items');
-    const [rows] = await pool.execute('SELECT id,title,kind,source_name,status,created_at,updated_at FROM knowledge_items ORDER BY updated_at DESC LIMIT 500');
+    const [rows] = await pool.execute('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id ORDER BY k.updated_at DESC LIMIT 500');
     const total = Number(counts[0].total);
     res.json({ items: rows.map(knowledgeItem), total, truncated: total > 500 });
   }));
   app.get('/api/admin/knowledge/:id', protectedStaff, asyncRoute(async (req, res) => {
     if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Knowledge item not found.' });
-    const [rows] = await pool.execute('SELECT id,title,kind,content,source_name,status,created_at,updated_at FROM knowledge_items WHERE id=?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT k.id,k.title,k.kind,k.content,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id WHERE k.id=?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Knowledge item not found.' });
     res.json({ item: knowledgeItem(rows[0]) });
   }));
   app.post('/api/admin/knowledge', csrf, protectedStaff, asyncRoute(async (req, res) => {
     const { title, kind, content, sourceName, status } = req.body || {};
+    if (kind === 'product') return res.status(400).json({ error: 'Add and edit products in the Products section.' });
     if (!clean(title, 200) || !['company','product'].includes(kind) || typeof content !== 'string' || !content.trim() || content.length > 30000 || !KNOWLEDGE_STATUSES.has(status)) return res.status(400).json({ error: 'Complete the knowledge fields.' });
     const conn = await pool.getConnection();
     try {
@@ -345,6 +372,10 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       const [rows] = await conn.execute('SELECT * FROM knowledge_items WHERE id=? FOR UPDATE', [req.params.id]);
       if (!rows.length) { await conn.rollback(); return res.status(404).json({ error: 'Knowledge item not found.' }); }
       const old = rows[0];
+      if (old.kind === 'product') {
+        const [managed] = await conn.execute('SELECT id FROM catalogue_products WHERE knowledge_id=? LIMIT 1', [old.id]);
+        if (managed.length) { await conn.rollback(); return res.status(409).json({ error: 'Edit this product in the Products section.' }); }
+      }
       const title = clean(req.body?.title ?? old.title, 200);
       const sourceName = clean(req.body?.sourceName ?? old.source_name, 255);
       const status = req.body?.status ?? old.status;
@@ -355,6 +386,56 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       await conn.commit();
       res.json({ ok: true });
     } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
+  }));
+  app.get('/api/admin/products', protectedStaff, asyncRoute(async (req, res) => {
+    const items = await listAdminProducts(pool);
+    res.json({ items, total: items.length, companies: catalogueMeta.companies.map((company) => ({ id: company.id, name: company.name, page: company.page })) });
+  }));
+  app.get('/api/admin/products/:id', protectedStaff, asyncRoute(async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Product not found.' });
+    const product = await getAdminProduct(pool, req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found.' });
+    res.json({ product });
+  }));
+  app.post('/api/admin/products', csrf, protectedStaff, productUpload.single('image'), asyncRoute(async (req, res) => {
+    let stored = null;
+    try {
+      if (req.file) {
+        await limit(`upload:product:${req.staff.id}`, 30, 3600);
+        stored = await storeProductImage(req.file.buffer, settings.uploadDir);
+      }
+      const result = await createProduct(pool, productPayload(req.body), stored
+        ? { imageName: stored.filename, imageSource: 'upload' }
+        : { imageName: '', imageSource: 'asset' });
+      res.status(201).json({ ok: true, ...result });
+    } catch (error) {
+      if (stored) await deleteProductImage(stored.filename, settings.uploadDir).catch(() => {});
+      throw error;
+    }
+  }));
+  app.patch('/api/admin/products/:id', csrf, protectedStaff, productUpload.single('image'), asyncRoute(async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Product not found.' });
+    let stored = null;
+    try {
+      if (req.file) {
+        await limit(`upload:product:${req.staff.id}`, 30, 3600);
+        stored = await storeProductImage(req.file.buffer, settings.uploadDir);
+      }
+      const result = await updateProduct(pool, req.params.id, productPayload(req.body), stored
+        ? { imageName: stored.filename, imageSource: 'upload' }
+        : {});
+      if (!result) {
+        if (stored) await deleteProductImage(stored.filename, settings.uploadDir).catch(() => {});
+        return res.status(404).json({ error: 'Product not found.' });
+      }
+      if (stored && result.previousImageSource === 'upload' && result.previousImage !== stored.filename) {
+        await deleteProductImage(result.previousImage, settings.uploadDir).catch(() => {});
+      }
+      res.json({ ok: true, id: result.id, knowledgeId: result.knowledgeId, slug: result.slug });
+    } catch (error) {
+      if (stored) await deleteProductImage(stored.filename, settings.uploadDir).catch(() => {});
+      throw error;
+    }
   }));
   app.post('/api/admin/documents', csrf, protectedStaff, upload.single('file'), asyncRoute(async (req, res) => {
     const title = clean(req.body?.title, 200);
@@ -380,7 +461,27 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     } finally { if (conn) conn.release(); }
   }));
 
+  app.get('/media/products/:file', (req, res, next) => {
+    if (!PRODUCT_IMAGE.test(req.params.file)) return next();
+    const type = mediaType(req.params.file);
+    if (!type) return next();
+    res.set({
+      'Content-Type': type,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      'Cross-Origin-Resource-Policy': 'same-origin'
+    });
+    res.sendFile(path.join(productImageDir(settings.uploadDir), req.params.file), (error) => {
+      if (!error) return;
+      if (res.headersSent) return;
+      if (error.code === 'ENOENT') return res.status(404).json({ error: 'Not found.' });
+      next(error);
+    });
+  });
+
   app.get(['/admin', '/admin/'], (req, res) => res.sendFile(path.join(ROOT, 'admin', 'index.html')));
+  app.get('/admin/vendor/quill.js', (req, res) => res.sendFile(path.join(ROOT, 'node_modules', 'quill', 'dist', 'quill.js')));
+  app.get('/admin/vendor/quill.snow.css', (req, res) => res.sendFile(path.join(ROOT, 'node_modules', 'quill', 'dist', 'quill.snow.css')));
   app.get('/admin/admin.js', (req, res) => res.sendFile(path.join(ROOT, 'admin', 'admin.js')));
   app.get('/admin/admin.css', (req, res) => res.sendFile(path.join(ROOT, 'admin', 'admin.css')));
   // Serve the same document root locally and on Plesk.
@@ -395,7 +496,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
   app.use((req, res) => res.status(404).json({ error: 'Not found.' }));
   app.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
-    if (error instanceof multer.MulterError) return res.status(400).json({ error: 'The PDF is too large or the upload is invalid.' });
+    if (error instanceof multer.MulterError) return res.status(400).json({ error: error.code === 'LIMIT_FILE_SIZE' ? 'The file is too large.' : 'The upload is invalid.' });
     if (error.status === 429) return res.status(429).json({ error: error.message });
     if (error.type === 'entity.too.large') return res.status(413).json({ error: 'Request is too large.' });
     if (error instanceof SyntaxError && error.status === 400) return res.status(400).json({ error: 'Invalid request.' });

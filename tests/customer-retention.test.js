@@ -9,16 +9,24 @@ const { createApp } = require('../server/app');
 const { digest } = require('../server/security');
 const { SESSION_MS } = require('../server/customer');
 const { purgeExpiredMessages, RETENTION_DAYS } = require('../server/retention');
-const { buildCatalogue } = require('../server/catalogue');
-const catalogue = require('../public/assets/data/products.json');
-
 const DAY = 24 * 60 * 60 * 1000;
 const PASSWORD = 'A sufficiently long test password!';
+const PROFILE = { name: 'Alice Example', phone: '12345678', company: 'Example Sdn Bhd' };
+const REGISTERED = { email: 'alice@example.com', ...PROFILE };
+
+function register(agent, body) {
+  return agent.post('/api/customer/register', { ...PROFILE, password: PASSWORD, ...body });
+}
+
+function guestMetadata(row) {
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone, company: row.company, createdAt: row.created_at };
+}
 
 // Only these SQL operations are simulated. Unknown statements fail rather than
 // falling through to a real database. Transactions restore state on rollback.
 function fakeDatabase() {
-  const data = { accounts: [], sessions: [], staffSessions: [], conversations: [], links: [], messages: [], knowledge: [], catalogueMappings: [], knowledgeLinks: [] };
+  const data = { accounts: [], sessions: [], staffSessions: [], conversations: [], links: [], messages: [], knowledge: [], catalogueProducts: [], knowledgeLinks: [] };
+  const accountLocks = [];
   let now = Date.parse('2026-04-01T12:00:00.000Z');
   const active = (conversation) => !conversation.visitor_closed_at && conversation.created_at > now - 30 * DAY;
 
@@ -42,15 +50,26 @@ function fakeDatabase() {
         error.code = 'ER_DUP_ENTRY';
         throw error;
       }
-      const account = { id: data.accounts.length + 1, email: params[0], password_hash: params[1], disabled: 0 };
+      const account = { id: data.accounts.length + 1, email: params[0], password_hash: params[1], name: params[2], phone: params[3], company: params[4], disabled: 0 };
       data.accounts.push(account);
       return [{ insertId: account.id }];
     }
-    if (query.startsWith('SELECT id,email,password_hash,disabled FROM customer_accounts')) {
+    if (query.startsWith('SELECT id,email,name,phone,company,password_hash,disabled FROM customer_accounts')) {
       return [data.accounts.filter((account) => account.email === params[0])];
+    }
+    if (query.startsWith('UPDATE customer_accounts SET name=?,phone=?,company=? WHERE id=?')) {
+      const account = data.accounts.find((entry) => entry.id === params[3]);
+      if (account) Object.assign(account, { name: params[0], phone: params[1], company: params[2] });
+      return [{ affectedRows: Number(Boolean(account)) }];
+    }
+    if (query === 'SELECT id,email,name,phone,company FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE') {
+      accountLocks.push({ type: 'profile', id: params[0] });
+      return [data.accounts.filter((account) => account.id === params[0] && !account.disabled)
+        .map(({ id, email, name, phone, company }) => ({ id, email, name, phone, company }))];
     }
     if (query.startsWith('SELECT id FROM customer_accounts')) {
       assert.match(query, /disabled=0 FOR UPDATE/);
+      accountLocks.push({ type: 'login', id: params[0] });
       return [data.accounts.filter((account) => account.id === params[0] && !account.disabled).map(({ id }) => ({ id }))];
     }
     if (query.startsWith('INSERT INTO customer_sessions')) {
@@ -63,11 +82,11 @@ function fakeDatabase() {
       data.sessions = data.sessions.filter((session) => session.token_hash !== params[0]);
       return [{ affectedRows: oldLength - data.sessions.length }];
     }
-    if (query.startsWith('SELECT u.id,u.email FROM customer_sessions')) {
+    if (query.startsWith('SELECT u.id,u.email,u.name,u.phone,u.company FROM customer_sessions')) {
       assert.match(query, /s\.token_hash=\? AND s\.expires_at>UTC_TIMESTAMP\(3\) AND u\.disabled=0/);
       const session = data.sessions.find((entry) => entry.token_hash === params[0] && entry.expires_at > now);
       const account = session && data.accounts.find((entry) => entry.id === session.customer_id && !entry.disabled);
-      return [account ? [{ id: account.id, email: account.email }] : []];
+      return [account ? [{ id: account.id, email: account.email, name: account.name, phone: account.phone, company: account.company }] : []];
     }
     if (query.startsWith('INSERT INTO conversations')) {
       assert.match(query, /DATE_ADD\(UTC_TIMESTAMP\(3\),\s*INTERVAL 30 DAY\)/);
@@ -152,9 +171,10 @@ function fakeDatabase() {
       assert.match(query, /k\.status='published'/);
       return [data.knowledgeLinks.filter((entry) => entry.status === 'published' && params.some((url) => entry.content.includes(url)))];
     }
-    if (query.startsWith('SELECT i.source_key,i.source_hash,k.content FROM knowledge_catalogue_imports i')) {
-      assert.match(query, /k\.status='published' AND k\.kind='product'/);
-      return [data.catalogueMappings.filter((entry) => entry.status === 'published' && entry.kind === 'product')];
+    if (query.startsWith('SELECT p.company_id,p.slug,p.name,p.product_type,p.image_name,p.image_source,p.manufacturer_source')) {
+      assert.match(query, /FROM catalogue_products p JOIN knowledge_items k ON k\.id=p\.knowledge_id/);
+      assert.match(query, /p\.status='published' AND k\.status='published'/);
+      return [data.catalogueProducts.filter((entry) => entry.status === 'published')];
     }
     if (query.startsWith('SELECT m.id,m.role,m.content,m.status,m.created_at FROM messages m')) {
       assert.match(query, /c\.created_at>DATE_SUB\(UTC_TIMESTAMP\(3\), INTERVAL 30 DAY\)/);
@@ -174,6 +194,7 @@ function fakeDatabase() {
 
   return {
     data,
+    accountLocks,
     execute,
     get now() { return now; },
     set now(value) { now = value; },
@@ -243,16 +264,22 @@ function browser(app, initialCookies = {}) {
 test('registration validates input, hashes passwords and creates a 30-day session', async () => {
   const { pool, app } = setup();
   const device = browser(app);
-  assert.equal((await request(app).post('/api/customer/register').send({ email: 'alice@example.com', password: PASSWORD })).status, 403);
-  assert.equal((await device.post('/api/customer/register', { email: 'invalid', password: PASSWORD })).status, 400);
-  assert.equal((await device.post('/api/customer/register', { email: 'alice@example.com', password: 'short' })).status, 400);
+  assert.equal((await request(app).post('/api/customer/register').send(REGISTERED)).status, 403);
+  assert.equal((await register(device, { email: 'invalid' })).status, 400);
+  assert.equal((await register(device, { email: 'alice@example.com', password: 'short' })).status, 400);
+  assert.equal((await register(device, { email: 'missing@example.com', name: '   ' })).status, 400);
+  assert.equal((await register(device, { email: 'missing@example.com', phone: '' })).status, 400);
+  assert.equal((await register(device, { email: 'missing@example.com', company: ' ' })).status, 400);
   assert.equal(pool.data.accounts.length, 0);
 
-  const registered = await device.post('/api/customer/register', { email: ' Alice@Example.COM ', password: PASSWORD });
+  const registered = await register(device, { email: ' Alice@Example.COM ' });
   assert.equal(registered.status, 201);
-  assert.deepEqual(registered.body, { authenticated: true, customer: { email: 'alice@example.com' }, linked: false });
+  assert.deepEqual(registered.body, { authenticated: true, customer: REGISTERED, linked: false });
   assert.doesNotMatch(JSON.stringify(registered.body), /password|hash/i);
   const account = pool.data.accounts[0];
+  assert.equal(account.name, PROFILE.name);
+  assert.equal(account.phone, PROFILE.phone);
+  assert.equal(account.company, PROFILE.company);
   assert.match(account.password_hash, /^\$argon2id\$/);
   assert.notEqual(account.password_hash, PASSWORD);
   assert.equal(await argon2.verify(account.password_hash, PASSWORD), true);
@@ -264,12 +291,61 @@ test('registration validates input, hashes passwords and creates a 30-day sessio
   assert.match(cookie, /Max-Age=2592000/);
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=Strict/i);
-  assert.deepEqual((await device.get('/api/customer/session')).body, { authenticated: true, customer: { email: 'alice@example.com' } });
+  assert.deepEqual((await device.get('/api/customer/session')).body, { authenticated: true, customer: REGISTERED });
 
-  const duplicate = await browser(app).post('/api/customer/register', { email: 'ALICE@example.com', password: PASSWORD });
+  const duplicate = await register(browser(app), { email: 'ALICE@example.com' });
   assert.equal(duplicate.status, 409);
   assert.equal(pool.data.accounts.length, 1);
   assert.equal(pool.data.sessions.length, 1);
+});
+
+test('legacy guest cookies expose only their own metadata and cannot authorize chat mutations', async () => {
+  const { pool, app } = setup();
+  const firstGuest = pool.guest('first@example.com');
+  const secondGuest = pool.guest('second@example.com');
+  pool.data.messages.push({ id: 1, conversation_id: firstGuest.row.id, role: 'user', content: 'Private legacy message', status: 'answered', created_at: pool.now });
+  const first = browser(app, { sss_visitor: firstGuest.secret, sss_customer: 'A'.repeat(43) });
+  const second = browser(app, { sss_visitor: secondGuest.secret });
+  const stranger = browser(app);
+  const message = { message: 'Bypass attempt', requestId: crypto.randomUUID() };
+  const oldStart = { name: 'Spoofed', email: 'first@example.com', phone: '12345678', company: 'Spoofed', consent: true };
+
+  assert.deepEqual((await first.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(firstGuest.row) });
+  assert.deepEqual((await second.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(secondGuest.row) });
+  assert.deepEqual((await stranger.get('/api/chat/current')).body, { active: false, customer: null });
+  for (const device of [first, stranger]) {
+    assert.equal((await device.post('/api/chat/start', oldStart)).status, 401);
+    assert.equal((await device.post('/api/chat/messages', message)).status, 401);
+  }
+  assert.equal(pool.data.conversations.length, 2);
+  assert.deepEqual(pool.data.messages.map((entry) => entry.content), ['Private legacy message']);
+  assert.equal(pool.data.links.length, 0);
+
+  assert.equal((await first.post('/api/chat/close')).status, 200);
+  assert.equal(first.jar.has('sss_visitor'), false);
+  assert.ok(pool.data.conversations.find((row) => row.id === firstGuest.row.id).visitor_closed_at);
+  assert.deepEqual((await first.get('/api/chat/current')).body, { active: false, customer: null });
+  assert.deepEqual((await second.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(secondGuest.row) });
+});
+
+test('login links a matching legacy guest and resumes its messages', async () => {
+  const { pool, app } = setup();
+  assert.equal((await register(browser(app), { email: 'alice@example.com' })).status, 201);
+  const guest = pool.guest(' ALICE@example.com ');
+  pool.data.messages.push({ id: 1, conversation_id: guest.row.id, role: 'user', content: 'Saved before login', status: 'answered', created_at: pool.now });
+  const device = browser(app, { sss_visitor: guest.secret });
+  assert.deepEqual((await device.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(guest.row) });
+
+  const login = await device.post('/api/customer/login', { email: 'alice@example.com', password: PASSWORD });
+  assert.equal(login.status, 200);
+  assert.equal(login.body.linked, true);
+  assert.equal(device.jar.has('sss_visitor'), false);
+  assert.deepEqual(pool.data.links, [{ conversation_id: guest.row.id, customer_id: pool.data.accounts[0].id }]);
+  const current = await device.get('/api/chat/current');
+  assert.equal(current.body.active, true);
+  assert.equal(current.body.conversation.id, guest.row.id);
+  assert.deepEqual(current.body.messages.map((entry) => entry.content), ['Saved before login']);
+  assert.deepEqual((await browser(app, { sss_visitor: guest.secret }).get('/api/chat/current')).body, { active: false, customer: null });
 });
 
 test('returning guest cookies are renewed only for the remaining conversation lifetime', async () => {
@@ -278,7 +354,7 @@ test('returning guest cookies are renewed only for the remaining conversation li
   const guest = pool.guest('guest@example.com', pool.now - 6 * DAY);
   const device = browser(app, { sss_visitor: guest.secret });
   const response = await device.get('/api/chat/current');
-  assert.equal(response.body.conversation.id, guest.row.id);
+  assert.deepEqual(response.body, { active: false, customer: null, guestConversation: guestMetadata(guest.row) });
   const cookie = response.headers['set-cookie'].find((header) => header.startsWith('sss_visitor='));
   assert.ok(cookie);
   assert.equal(device.jar.get('sss_visitor'), guest.secret);
@@ -293,17 +369,20 @@ test('guest ownership transfers on registration and survives login on another de
   const guest = pool.guest(' Alice@Example.com ');
   pool.data.messages.push({ id: 1, conversation_id: guest.row.id, role: 'user', content: 'Saved example', status: 'answered', created_at: pool.now });
   pool.data.messages.push({ id: 2, conversation_id: guest.row.id, role: 'assistant', content: 'The FXC MC-4 is a parachute system. https://www.fxcguardian.com/product/mc-4-parachute-system/', status: 'answered', created_at: pool.now });
-  const product = buildCatalogue(catalogue).find((entry) => entry.key === 'product:fxc/mc4');
-  pool.data.catalogueMappings.push({ source_key: product.key, source_hash: product.hash, content: product.content, kind: 'product', status: 'published' });
-  pool.data.knowledgeLinks.push({ content: product.content, status: 'published' });
+  pool.data.catalogueProducts.push({
+    company_id: 'fxc', slug: 'mc4', name: 'MC-4', product_type: 'Ram-air personnel parachute system',
+    image_name: 'fxc-mc4.jpg', image_source: 'asset',
+    manufacturer_source: 'https://www.fxcguardian.com/product/mc-4-parachute-system/', status: 'published'
+  });
+  pool.data.knowledgeLinks.push({ content: 'https://www.fxcguardian.com/product/mc-4-parachute-system/', status: 'published' });
   const first = browser(app, { sss_visitor: guest.secret });
   const stranger = browser(app);
-  assert.equal((await stranger.get('/api/chat/current')).body.active, false);
-  assert.equal((await browser(app, { sss_visitor: crypto.randomBytes(32).toString('base64url') }).get('/api/chat/current')).body.active, false);
+  assert.deepEqual((await stranger.get('/api/chat/current')).body, { active: false, customer: null });
+  assert.deepEqual((await browser(app, { sss_visitor: crypto.randomBytes(32).toString('base64url') }).get('/api/chat/current')).body, { active: false, customer: null });
   assert.equal((await stranger.post('/api/chat/close')).status, 200);
-  assert.equal((await first.get('/api/chat/current')).body.conversation.id, guest.row.id);
+  assert.deepEqual((await first.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(guest.row) });
 
-  const registration = await first.post('/api/customer/register', { email: 'alice@example.com', password: PASSWORD });
+  const registration = await register(first, { email: 'alice@example.com' });
   assert.equal(registration.status, 201);
   assert.equal(registration.body.linked, true);
   assert.equal(first.jar.has('sss_visitor'), false);
@@ -319,12 +398,14 @@ test('guest ownership transfers on registration and survives login on another de
   const login = await second.post('/api/customer/login', { email: ' ALICE@example.com ', password: PASSWORD });
   assert.equal(login.status, 200);
   assert.equal(login.body.linked, false);
+  assert.deepEqual(login.body.customer, REGISTERED);
   assert.notEqual(first.jar.get('sss_customer'), second.jar.get('sss_customer'));
   const secondCurrent = await second.get('/api/chat/current');
   assert.equal(secondCurrent.body.conversation.id, guest.row.id);
+  assert.deepEqual(secondCurrent.body.customer, REGISTERED);
   assert.deepEqual(secondCurrent.body.messages[1].products, current.body.messages[1].products);
   assert.deepEqual(secondCurrent.body.messages[1].approvedLinks, ['https://www.fxcguardian.com/product/mc-4-parachute-system/']);
-  pool.data.catalogueMappings[0].status = 'retired';
+  pool.data.catalogueProducts[0].status = 'retired';
   pool.data.knowledgeLinks[0].status = 'retired';
   const retired = (await second.get('/api/chat/current')).body.messages[1];
   assert.equal(retired.products, undefined);
@@ -334,7 +415,7 @@ test('guest ownership transfers on registration and survives login on another de
   // A different signed-in customer cannot claim or read the linked chat,
   // even when they present its former guest token.
   const unrelated = browser(app, { sss_visitor: guest.secret });
-  const unrelatedRegistration = await unrelated.post('/api/customer/register', { email: 'other@example.com', password: PASSWORD });
+  const unrelatedRegistration = await register(unrelated, { email: 'other@example.com' });
   assert.equal(unrelatedRegistration.status, 201);
   assert.equal(unrelatedRegistration.body.linked, false);
   assert.equal((await unrelated.get('/api/chat/current')).body.active, false);
@@ -361,15 +442,15 @@ test('conflicting guest links roll back registration or login without stealing a
   const { pool, app } = setup();
   const existingGuest = pool.guest('guest@example.com');
   const visitor = browser(app, { sss_visitor: existingGuest.secret });
-  const rejected = await visitor.post('/api/customer/register', { email: 'other@example.com', password: PASSWORD });
+  const rejected = await register(visitor, { email: 'other@example.com' });
   assert.equal(rejected.status, 409);
   assert.match(rejected.body.error, /different email/i);
   assert.equal(pool.data.accounts.length, 0);
   assert.equal(pool.data.sessions.length, 0);
   assert.equal(pool.data.links.length, 0);
-  assert.equal((await visitor.get('/api/chat/current')).body.conversation.id, existingGuest.row.id);
+  assert.deepEqual((await visitor.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(existingGuest.row) });
 
-  assert.equal((await visitor.post('/api/customer/register', { email: 'guest@example.com', password: PASSWORD })).status, 201);
+  assert.equal((await register(visitor, { email: 'guest@example.com' })).status, 201);
   const anotherGuest = pool.guest('guest@example.com');
   const otherDevice = browser(app, { sss_visitor: anotherGuest.secret });
   const conflict = await otherDevice.post('/api/customer/login', { email: 'guest@example.com', password: PASSWORD });
@@ -377,17 +458,77 @@ test('conflicting guest links roll back registration or login without stealing a
   assert.match(conflict.body.error, /already has an active chat/i);
   assert.equal(pool.data.links.length, 1);
   assert.equal(pool.data.sessions.length, 1);
-  assert.equal((await otherDevice.get('/api/chat/current')).body.conversation.id, anotherGuest.row.id);
+  assert.deepEqual((await otherDevice.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(anotherGuest.row) });
   assert.equal((await visitor.get('/api/chat/current')).body.conversation.id, existingGuest.row.id);
 });
 
 test('disabled accounts cannot log in or use an existing session', async () => {
   const { pool, app } = setup();
   const device = browser(app);
-  assert.equal((await device.post('/api/customer/register', { email: 'disabled@example.com', password: PASSWORD })).status, 201);
+  assert.equal((await register(device, { email: 'disabled@example.com' })).status, 201);
   pool.data.accounts[0].disabled = 1;
   assert.equal((await device.get('/api/customer/session')).body.authenticated, false);
+  assert.equal((await device.post('/api/chat/start', { consent: true })).status, 401);
+  assert.equal((await device.post('/api/customer/profile', PROFILE)).status, 401);
   assert.equal((await browser(app).post('/api/customer/login', { email: 'disabled@example.com', password: PASSWORD })).status, 401);
+});
+
+test('an incomplete account must complete its own profile before starting a chat', async () => {
+  const { pool, app } = setup();
+  const device = browser(app);
+  const other = browser(app);
+  assert.equal((await register(device, { email: 'alice@example.com' })).status, 201);
+  assert.equal((await register(other, { email: 'other@example.com', name: 'Other Owner' })).status, 201);
+  const account = pool.data.accounts[0];
+  const otherAccount = { ...pool.data.accounts[1] };
+  const locksBefore = pool.accountLocks.length;
+  for (const field of ['name', 'phone', 'company']) {
+    account[field] = '   ';
+    assert.equal((await device.post('/api/chat/start', { consent: true, ...PROFILE })).status, 409, field);
+    account[field] = PROFILE[field];
+  }
+  Object.assign(account, { name: null, phone: null, company: null });
+  assert.equal((await device.post('/api/chat/start', { consent: true, ...PROFILE })).status, 409);
+  assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.links.length, 0);
+  assert.equal(pool.data.messages.length, 0);
+  assert.equal(pool.accountLocks.slice(locksBefore).filter((entry) => entry.type === 'profile').length, 4);
+
+  assert.equal((await browser(app).post('/api/customer/profile', PROFILE)).status, 401);
+  assert.equal((await request(app).post('/api/customer/profile')
+    .set('Cookie', `sss_customer=${device.jar.get('sss_customer')}`).send(PROFILE)).status, 403);
+  for (const invalid of [
+    { name: ' ', phone: '12345678', company: 'Example' },
+    { name: 'Name', phone: '', company: 'Example' },
+    { name: 'Name', phone: '12345678', company: null },
+    { name: 'N'.repeat(121), phone: '12345678', company: 'Example' },
+    { name: 'Name', phone: '1'.repeat(51), company: 'Example' },
+    { name: 'Name', phone: '12345678', company: 'C'.repeat(161) }
+  ]) {
+    assert.equal((await device.post('/api/customer/profile', invalid)).status, 400);
+  }
+  assert.deepEqual({ name: account.name, phone: account.phone, company: account.company }, { name: null, phone: null, company: null });
+  const beforeUpdate = pool.accountLocks.length;
+  const updated = await device.post('/api/customer/profile', {
+    name: '  Completed Name  ', phone: '  0123456789  ', company: '  Completed Company  ',
+    email: 'other@example.com', id: otherAccount.id
+  });
+  const expected = { email: 'alice@example.com', name: 'Completed Name', phone: '0123456789', company: 'Completed Company' };
+  assert.equal(updated.status, 200);
+  assert.deepEqual(updated.body, { authenticated: true, customer: expected });
+  assert.deepEqual(pool.accountLocks.slice(beforeUpdate), [{ type: 'profile', id: account.id }]);
+  assert.deepEqual(pool.data.accounts[1], otherAccount);
+  assert.deepEqual((await device.get('/api/customer/session')).body, { authenticated: true, customer: expected });
+
+  const beforeStart = pool.accountLocks.length;
+  const started = await device.post('/api/chat/start', { consent: true });
+  assert.equal(started.status, 201);
+  assert.deepEqual(started.body.customer, expected);
+  assert.deepEqual(pool.accountLocks.slice(beforeStart), [{ type: 'profile', id: account.id }]);
+  assert.deepEqual(
+    (({ email, name, phone, company }) => ({ email, name, phone, company }))(pool.data.conversations[0]),
+    expected
+  );
 });
 
 test('customer sessions and both guest and linked chats expire at 30 days', async () => {
@@ -396,12 +537,12 @@ test('customer sessions and both guest and linked chats expire at 30 days', asyn
   const unlinkedGuest = pool.guest('guest@example.com');
   const customer = browser(app, { sss_visitor: linkedGuest.secret });
   const guest = browser(app, { sss_visitor: unlinkedGuest.secret });
-  assert.equal((await customer.post('/api/customer/register', { email: 'alice@example.com', password: PASSWORD })).status, 201);
+  assert.equal((await register(customer, { email: 'alice@example.com' })).status, 201);
 
   pool.now += 30 * DAY - 1;
   assert.equal((await customer.get('/api/customer/session')).body.authenticated, true);
   assert.equal((await customer.get('/api/chat/current')).body.conversation.id, linkedGuest.row.id);
-  assert.equal((await guest.get('/api/chat/current')).body.conversation.id, unlinkedGuest.row.id);
+  assert.deepEqual((await guest.get('/api/chat/current')).body, { active: false, customer: null, guestConversation: guestMetadata(unlinkedGuest.row) });
   pool.now += 1;
   assert.equal((await customer.get('/api/customer/session')).body.authenticated, false);
   assert.equal((await guest.get('/api/chat/current')).body.active, false);
@@ -409,8 +550,10 @@ test('customer sessions and both guest and linked chats expire at 30 days', asyn
   assert.equal((await customer.get('/api/chat/current')).body.active, false);
 });
 
-test('a failed welcome message rolls back a new guest conversation', async () => {
+test('a failed welcome message rolls back a new owned conversation and link', async () => {
   const { pool, app } = setup();
+  const device = browser(app);
+  assert.equal((await register(device, { email: 'visitor@example.com' })).status, 201);
   const connect = pool.getConnection.bind(pool);
   pool.getConnection = async () => {
     const conn = await connect();
@@ -421,42 +564,152 @@ test('a failed welcome message rolls back a new guest conversation', async () =>
     };
     return conn;
   };
-  const device = browser(app);
-  const response = await device.post('/api/chat/start', { name: 'Visitor', email: 'visitor@example.com', phone: '12345678', company: 'Example Co', consent: true });
+  const response = await device.post('/api/chat/start', { consent: true });
   assert.equal(response.status, 500);
   assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.links.length, 0);
   assert.equal(pool.data.messages.length, 0);
+  assert.equal(pool.data.accounts.length, 1);
+  assert.equal(pool.data.sessions.length, 1);
   assert.equal(device.jar.has('sss_visitor'), false);
 });
 
-test('an account creates one owned chat and cannot start another on a second device', async () => {
+test('a failed ownership link rolls back a new conversation', async () => {
+  const { pool, app } = setup();
+  const device = browser(app);
+  assert.equal((await register(device, { email: 'owner@example.com' })).status, 201);
+  const connect = pool.getConnection.bind(pool);
+  pool.getConnection = async () => {
+    const conn = await connect();
+    const execute = conn.execute;
+    conn.execute = async (sql, params) => {
+      if (sql.startsWith('INSERT INTO customer_conversations')) throw new Error('Simulated link failure');
+      return execute(sql, params);
+    };
+    return conn;
+  };
+  assert.equal((await device.post('/api/chat/start', { consent: true })).status, 500);
+  assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.links.length, 0);
+  assert.equal(pool.data.messages.length, 0);
+  assert.equal(pool.data.sessions.length, 1);
+});
+
+test('chat creation uses the account row locked after session lookup', async () => {
+  const { pool, app } = setup();
+  const device = browser(app);
+  assert.equal((await register(device, { email: 'owner@example.com' })).status, 201);
+  const latestProfile = { name: 'Latest Name', phone: '87654321', company: 'Latest Company' };
+  const connect = pool.getConnection.bind(pool);
+  let changed = false;
+  pool.getConnection = async () => {
+    const conn = await connect();
+    const execute = conn.execute;
+    conn.execute = async (sql, params) => {
+      if (!changed && sql.startsWith('SELECT id,email,name,phone,company FROM customer_accounts')) {
+        Object.assign(pool.data.accounts[0], latestProfile);
+        changed = true;
+      }
+      return execute(sql, params);
+    };
+    return conn;
+  };
+  const result = await device.post('/api/chat/start', { consent: true });
+  const expected = { email: 'owner@example.com', ...latestProfile };
+  assert.equal(result.status, 201);
+  assert.equal(changed, true);
+  assert.deepEqual(result.body.customer, expected);
+  for (const field of ['name', 'email', 'phone', 'company']) {
+    assert.equal(result.body.conversation[field], expected[field]);
+    assert.equal(pool.data.conversations[0][field], expected[field]);
+  }
+});
+
+test('profile and start reject an account disabled between session lookup and locking', async () => {
+  for (const [url, body] of [
+    ['/api/chat/start', { consent: true }],
+    ['/api/customer/profile', { name: 'New Name', phone: '87654321', company: 'New Company' }]
+  ]) {
+    const { pool, app } = setup();
+    const device = browser(app);
+    assert.equal((await register(device, { email: 'alice@example.com' })).status, 201);
+    const before = { ...pool.data.accounts[0] };
+    const connect = pool.getConnection.bind(pool);
+    let locked = false;
+    pool.getConnection = async () => {
+      const conn = await connect();
+      const execute = conn.execute;
+      conn.execute = async (sql, params) => {
+        if (sql.startsWith('SELECT id,email,name,phone,company FROM customer_accounts')) {
+          locked = true;
+          return [[]];
+        }
+        return execute(sql, params);
+      };
+      return conn;
+    };
+    assert.equal((await device.post(url, body)).status, 401, url);
+    assert.equal(locked, true, url);
+    assert.deepEqual(pool.data.accounts[0], before);
+    assert.equal(pool.data.conversations.length, 0);
+    assert.equal(pool.data.links.length, 0);
+    assert.equal(pool.data.messages.length, 0);
+  }
+});
+
+test('an account creates owned chats from its stored profile and requires consent each time', async () => {
   const { pool, app } = setup();
   const first = browser(app);
   const second = browser(app);
-  assert.equal((await first.post('/api/customer/register', { email: 'owner@example.com', password: PASSWORD })).status, 201);
+  const expected = { email: 'owner@example.com', ...PROFILE };
+  assert.equal((await register(first, { email: 'owner@example.com' })).status, 201);
+  const locksBeforeLogin = pool.accountLocks.length;
   assert.equal((await second.post('/api/customer/login', { email: 'owner@example.com', password: PASSWORD })).status, 200);
-  const details = { name: 'Example Owner', email: 'OWNER@example.com', phone: '12345678', company: 'Example Co', consent: true };
-  assert.equal((await first.post('/api/chat/start', { ...details, email: 'someone-else@example.com' })).status, 400);
+  assert.deepEqual(pool.accountLocks.slice(locksBeforeLogin), [{ type: 'login', id: pool.data.accounts[0].id }]);
+  for (const consent of [undefined, false, 'true']) {
+    assert.equal((await first.post('/api/chat/start', { consent })).status, 400);
+  }
   assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.links.length, 0);
+  assert.equal(pool.data.messages.length, 0);
 
-  const started = await first.post('/api/chat/start', details);
+  const beforeStart = pool.accountLocks.length;
+  const started = await first.post('/api/chat/start', {
+    consent: true, name: 'Spoofed Name', email: 'attacker@example.com', phone: '99999999', company: 'Spoofed Company'
+  });
   assert.equal(started.status, 201);
+  assert.equal(started.body.messages.length, 1);
   assert.equal(started.body.messages[0].role, 'assistant');
   assert.match(started.body.messages[0].content, /what would you like to know/i);
+  assert.deepEqual(started.body.customer, expected);
+  assert.deepEqual(pool.accountLocks.slice(beforeStart), [{ type: 'profile', id: pool.data.accounts[0].id }]);
   assert.equal(first.jar.has('sss_visitor'), false);
   assert.equal(pool.data.conversations.length, 1);
   assert.deepEqual(pool.data.links, [{ conversation_id: started.body.conversation.id, customer_id: pool.data.accounts[0].id }]);
+  for (const field of ['name', 'email', 'phone', 'company']) {
+    assert.equal(started.body.conversation[field], expected[field]);
+    assert.equal(pool.data.conversations[0][field], expected[field]);
+    assert.equal(pool.data.accounts[0][field], expected[field]);
+  }
+  assert.equal(pool.data.messages.length, 1);
   const resumed = await second.get('/api/chat/current');
   assert.equal(resumed.body.conversation.id, started.body.conversation.id);
   assert.equal(resumed.body.messages[0].content, started.body.messages[0].content);
-  assert.equal((await second.post('/api/chat/start', details)).status, 409);
+  assert.deepEqual(resumed.body.customer, expected);
+  assert.equal((await second.post('/api/chat/start', { consent: true })).status, 409);
   assert.equal(pool.data.conversations.length, 1);
   assert.equal(pool.data.links.length, 1);
 
   assert.equal((await first.post('/api/chat/close')).status, 200);
-  const replacement = await second.post('/api/chat/start', details);
+  const closed = await second.get('/api/chat/current');
+  assert.equal(closed.body.active, false);
+  assert.deepEqual(closed.body.customer, expected);
+  assert.equal((await second.post('/api/chat/start', {})).status, 400);
+  assert.equal((await second.post('/api/chat/start', { consent: false })).status, 400);
+  const replacement = await second.post('/api/chat/start', { consent: true });
   assert.equal(replacement.status, 201);
   assert.notEqual(replacement.body.conversation.id, started.body.conversation.id);
+  assert.deepEqual(replacement.body.customer, expected);
   assert.equal((await first.get('/api/chat/current')).body.conversation.id, replacement.body.conversation.id);
   assert.equal(pool.data.conversations.length, 2);
   assert.equal(pool.data.links.length, 2);
@@ -502,6 +755,8 @@ test('an in-memory provider response finishing at the cutoff is not stored', asy
   const guest = pool.guest('visitor@example.com', pool.now - 30 * DAY + 1000);
   pool.data.knowledge.push({ id: 1, title: 'Sample equipment', source_name: 'Fixture', content: 'Sample equipment description.' });
   const device = browser(app, { sss_visitor: guest.secret });
+  assert.equal((await register(device, { email: 'visitor@example.com' })).status, 201);
+  assert.equal((await device.get('/api/chat/current')).body.conversation.id, guest.row.id);
   const inFlight = device.post('/api/chat/messages', { message: 'Describe sample equipment', requestId: crypto.randomUUID() });
   let timer;
   try {

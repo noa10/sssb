@@ -1,40 +1,13 @@
 'use strict';
 
-const catalogue = require('../public/assets/data/products.json');
-const { buildCatalogue } = require('./catalogue');
-
-// Only refer to public catalogue assets that correspond to an imported source.
-const entries = new Map(buildCatalogue(catalogue).map((entry) => [entry.key, entry]));
-const IMAGE = /^[a-z0-9][a-z0-9._-]*\.(?:jpe?g|png|webp)$/i;
+const meta = require('./catalogue-meta');
+const { PRODUCT_IMAGE } = require('./images');
 
 function normalise(value) {
   return String(value || '').normalize('NFKC').toLowerCase()
     .replace(/([a-z0-9])[.\-_](?=[a-z0-9])/g, '$1')
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }
-
-const products = Object.entries(catalogue.companies).flatMap(([companyId, items]) => {
-  const profile = catalogue.company_profiles[companyId];
-  return items.map((item) => {
-    const key = `product:${companyId}/${item.id}`;
-    const entry = entries.get(key);
-    const company = normalise(profile.name);
-    const names = [...new Set([normalise(item.name), normalise(item.id)])];
-    return {
-      key,
-      hash: entry.hash,
-      names,
-      company,
-      reference: {
-        name: `${profile.name} ${item.name}`,
-        type: item.type,
-        url: `/${profile.url}#${item.id}`,
-        image: IMAGE.test(item.image || '') ? `/assets/img/products/${item.image}` : null,
-        manufacturerUrl: new URL(item.source).href
-      }
-    };
-  });
-});
 
 function containsPhrase(text, phrase) {
   return phrase && ` ${text} `.includes(` ${phrase} `);
@@ -50,41 +23,66 @@ function matchesProduct(text, product) {
   });
 }
 
+function imagePath(row, company) {
+  if (row.image_source === 'upload' && PRODUCT_IMAGE.test(row.image_name || '')) return `/media/products/${row.image_name}`;
+  return meta.assetImage(row.image_name) || meta.assetImage(company.logo);
+}
+
+function manufacturerUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
+}
+
+async function publishedProducts(pool) {
+  const [rows] = await pool.execute(
+    `SELECT p.company_id,p.slug,p.name,p.product_type,p.image_name,p.image_source,p.manufacturer_source
+     FROM catalogue_products p JOIN knowledge_items k ON k.id=p.knowledge_id
+     WHERE p.status='published' AND k.status='published'`
+  );
+  return rows.flatMap((row) => {
+    const company = meta.company(row.company_id);
+    if (!company) return [];
+    return [{
+      names: [...new Set([normalise(row.name), normalise(row.slug)])].filter(Boolean),
+      company: normalise(company.name),
+      reference: {
+        name: `${company.name} ${row.name}`,
+        type: row.product_type,
+        url: meta.pageUrl(company.id, row.slug),
+        image: imagePath(row, company),
+        manufacturerUrl: manufacturerUrl(row.manufacturer_source)
+      }
+    }];
+  });
+}
+
 async function addProductReferences(pool, messages) {
   const candidates = messages.map((message) => {
     if (message.role !== 'assistant' || message.status !== 'answered') return [];
     const text = normalise(message.content);
-    return products.filter((product) => matchesProduct(text, product));
+    return { text };
   });
-  if (!candidates.some((matches) => matches.length)) return messages;
+  if (!candidates.some((candidate) => candidate.text)) return messages;
 
-  let mappings;
+  let products;
   try {
-    [mappings] = await pool.execute(
-      `SELECT i.source_key,i.source_hash,k.content FROM knowledge_catalogue_imports i
-       JOIN knowledge_items k ON k.id=i.knowledge_id
-       WHERE k.status='published' AND k.kind='product'`
-    );
+    products = await publishedProducts(pool);
   } catch (error) {
-    // A site that has not imported the optional catalogue can still show chat text.
+    // A site that has not run the product migration can still show chat text.
     if (error.code === 'ER_NO_SUCH_TABLE') return messages;
     throw error;
   }
-  const approved = new Map(mappings.map((row) => [row.source_key, row]));
+  if (!products.length) return messages;
+
   return messages.map((message, index) => {
-    const references = candidates[index]
-      .filter((product) => {
-        const source = approved.get(product.key);
-        return source && source.source_hash === product.hash && typeof source.content === 'string' &&
-          source.content.split(/\r?\n/).some((line) => line.trim() === `SSSB product page: ${product.reference.url}`);
-      })
+    const candidate = candidates[index];
+    if (!candidate.text) return message;
+    const references = products
+      .filter((product) => matchesProduct(candidate.text, product))
       .slice(0, 3)
-      .map((product) => {
-        const reference = { ...product.reference };
-        const lines = approved.get(product.key).content.split(/\r?\n/);
-        if (!lines.some((line) => line.trim() === `Manufacturer source: ${reference.manufacturerUrl}`)) reference.manufacturerUrl = null;
-        return reference;
-      });
+      .map((product) => product.reference);
     return references.length ? { ...message, products: references } : message;
   });
 }

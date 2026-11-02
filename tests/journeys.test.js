@@ -12,7 +12,7 @@ const { HANDOFF, UNKNOWN } = require('../server/ai');
 
 // This exercises the HTTP contracts with a simulated database. MariaDB still needs its own integration test.
 function fakeDatabase(passwordHash) {
-  const data = { conversations: [], messages: [], knowledge: [], chunks: [], sessions: [] };
+  const data = { conversations: [], messages: [], knowledge: [], chunks: [], sessions: [], accounts: [], customerSessions: [], links: [] };
   const staff = { id: '1', email: 'staff@example.com', password_hash: passwordHash, disabled: 0 };
   const execute = async (sql, params = []) => {
     const query = sql.replace(/\s+/g, ' ').trim();
@@ -26,7 +26,49 @@ function fakeDatabase(passwordHash) {
     }
     if (query.startsWith('UPDATE staff_sessions SET last_seen_at')) return [{ affectedRows: 1 }];
     if (query.startsWith('DELETE FROM staff_sessions')) { data.sessions = data.sessions.filter((entry) => entry.hash !== params[0]); return [{ affectedRows: 1 }]; }
-    if (query.startsWith('SELECT * FROM conversations WHERE visitor_token_hash=')) return [[...data.conversations.filter((entry) => entry.visitor_token_hash === params[0] && !entry.closed)]];
+    if (query.startsWith('INSERT INTO customer_accounts')) {
+      if (data.accounts.some((account) => account.email === params[0])) {
+        const error = new Error('duplicate email');
+        error.code = 'ER_DUP_ENTRY';
+        throw error;
+      }
+      const [email, password_hash, name, phone, company] = params;
+      const account = { id: data.accounts.length + 1, email, password_hash, name, phone, company, disabled: 0 };
+      data.accounts.push(account);
+      return [{ insertId: account.id }];
+    }
+    if (query.startsWith('SELECT id,email,name,phone,company,password_hash,disabled FROM customer_accounts')) {
+      return [data.accounts.filter((account) => account.email === params[0])];
+    }
+    if (query === 'SELECT id,email,name,phone,company FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE') {
+      return [data.accounts.filter((account) => account.id === params[0] && !account.disabled)
+        .map(({ id, email, name, phone, company }) => ({ id, email, name, phone, company }))];
+    }
+    if (query === 'SELECT id FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE') {
+      return [data.accounts.filter((account) => account.id === params[0] && !account.disabled).map(({ id }) => ({ id }))];
+    }
+    if (query.startsWith('INSERT INTO customer_sessions')) {
+      data.customerSessions.push({ hash: params[0], customerId: params[1] });
+      return [{ affectedRows: 1 }];
+    }
+    if (query.startsWith('DELETE FROM customer_sessions')) {
+      data.customerSessions = data.customerSessions.filter((session) => session.hash !== params[0]);
+      return [{ affectedRows: 1 }];
+    }
+    if (query.startsWith('SELECT u.id,u.email,u.name,u.phone,u.company FROM customer_sessions')) {
+      const session = data.customerSessions.find((entry) => entry.hash === params[0]);
+      const account = session && data.accounts.find((entry) => entry.id === session.customerId && !entry.disabled);
+      return [account ? [{ id: account.id, email: account.email, name: account.name, phone: account.phone, company: account.company }] : []];
+    }
+    if (query.startsWith('SELECT * FROM conversations WHERE visitor_token_hash=')) return [[...data.conversations.filter((entry) => entry.visitor_token_hash === params[0] && !entry.closed && !data.links.some((link) => link.conversation_id === entry.id))]];
+    if (query.startsWith('SELECT c.* FROM customer_conversations')) {
+      const owned = data.links.filter((link) => link.customer_id === params[0]).map((link) => link.conversation_id);
+      return [data.conversations.filter((entry) => owned.includes(entry.id) && !entry.closed).slice(-1)];
+    }
+    if (query.startsWith('INSERT INTO customer_conversations')) {
+      data.links.push({ conversation_id: params[0], customer_id: params[1] });
+      return [{ affectedRows: 1 }];
+    }
     if (query.startsWith('INSERT INTO conversations')) {
       const [id, visitor_token_hash, name, email, phone, company] = params;
       data.conversations.push({ id, visitor_token_hash, name, email, phone, company, status: 'new', created_at: new Date(), updated_at: new Date() });
@@ -89,14 +131,27 @@ function fakeDatabase(passwordHash) {
         return item && item.status === 'published' ? { ...item, content: chunk.content } : null;
       }).filter(Boolean)]];
     }
-    if (query.startsWith('SELECT i.source_key,i.source_hash,k.content FROM knowledge_catalogue_imports i')) return [[]];
+    if (query.startsWith('SELECT p.company_id,p.slug,p.name,p.product_type,p.image_name,p.image_source,p.manufacturer_source')) return [[]];
     if (query.startsWith('SELECT k.content FROM knowledge_items k WHERE')) return [[]];
     if (query.startsWith('SELECT COUNT(*) AS total FROM knowledge_items')) return [[{ total: data.knowledge.length }]];
-    if (query.startsWith('SELECT id,title,kind,source_name,status,created_at,updated_at FROM knowledge_items')) return [[...data.knowledge.map(({ content, ...entry }) => entry)]];
-    if (query.startsWith('SELECT id,title,kind,content,source_name,status,created_at,updated_at FROM knowledge_items')) return [[...data.knowledge.filter((entry) => entry.id === String(params[0]))]];
+    if (query.startsWith('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k')) return [[...data.knowledge.map(({ content, ...entry }) => ({ ...entry, catalogue_product_id: null }))]];
+    if (query.startsWith('SELECT k.id,k.title,k.kind,k.content,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k')) return [[...data.knowledge.filter((entry) => entry.id === String(params[0])).map((entry) => ({ ...entry, catalogue_product_id: null }))]];
     throw new Error(`Unexpected simulated query: ${query}`);
   };
-  return { data, async execute(...args) { return execute(...args); }, async getConnection() { return { execute, async beginTransaction() {}, async commit() {}, async rollback() {}, release() {} }; } };
+  return {
+    data,
+    async execute(...args) { return execute(...args); },
+    async getConnection() {
+      let snapshot;
+      return {
+        execute,
+        async beginTransaction() { snapshot = structuredClone(data); },
+        async commit() { snapshot = undefined; },
+        async rollback() { if (snapshot) Object.assign(data, snapshot); },
+        release() {}
+      };
+    }
+  };
 }
 
 async function mutate(agent, method, url, body) {
@@ -112,8 +167,15 @@ test('visitor and staff journeys respect publication and conversation ownership'
   const visitor = request.agent(app);
   const staff = request.agent(app);
   const other = request.agent(app);
-  const start = await mutate(visitor, 'post', '/api/chat/start', { name: 'Visitor Name', email: 'visitor@example.com', phone: '12345678', company: 'Example Company', consent: true });
+  const account = { name: 'Visitor Name', email: 'visitor@example.com', phone: '12345678', company: 'Example Company' };
+  const registered = await mutate(visitor, 'post', '/api/customer/register', { ...account, password: 'A long customer password!' });
+  assert.equal(registered.status, 201);
+  assert.deepEqual(registered.body.customer, account);
+  assert.equal((await mutate(other, 'post', '/api/chat/start', { consent: true })).status, 401);
+  assert.equal((await mutate(other, 'post', '/api/chat/messages', { message: 'Hello', requestId: crypto.randomUUID() })).status, 401);
+  const start = await mutate(visitor, 'post', '/api/chat/start', { consent: true });
   assert.equal(start.status, 201);
+  assert.deepEqual(start.body.customer, account);
   assert.equal(start.body.messages.length, 1);
   assert.equal(start.body.messages[0].role, 'assistant');
   assert.match(start.body.messages[0].content, /what would you like to know/i);
@@ -126,7 +188,7 @@ test('visitor and staff journeys respect publication and conversation ownership'
 
   const login = await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password: 'A long test password!' });
   assert.equal(login.status, 200);
-  const created = await mutate(staff, 'post', '/api/admin/knowledge', { title: 'MC-4 catalogue', kind: 'product', content: 'The MC-4 is a parachute system.', sourceName: 'Product catalogue', status: 'draft' });
+  const created = await mutate(staff, 'post', '/api/admin/knowledge', { title: 'MC-4 catalogue', kind: 'company', content: 'The MC-4 is a parachute system.', sourceName: 'Product catalogue', status: 'draft' });
   assert.equal(created.status, 201);
   const id = created.body.id;
   const summary = await staff.get('/api/admin/knowledge').expect(200);
@@ -187,7 +249,11 @@ test('misspelled greetings and small talk receive safe conversational replies', 
   };
   const app = createApp({ pool, provider, env: { NODE_ENV: 'test' } });
   const visitor = request.agent(app);
-  await mutate(visitor, 'post', '/api/chat/start', { name: 'Visitor', email: 'visitor@example.com', phone: '12345678', company: 'Example', consent: true });
+  const registered = await mutate(visitor, 'post', '/api/customer/register', {
+    name: 'Visitor', email: 'visitor@example.com', phone: '12345678', company: 'Example', password: 'A long customer password!'
+  });
+  assert.equal(registered.status, 201);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true })).status, 201);
   for (const message of ['helolo', 'helo!', 'hlelo']) {
     assert.equal((await mutate(visitor, 'post', '/api/chat/messages', { message, requestId: crypto.randomUUID() })).status, 200);
     assert.match(pool.data.messages.at(-1).content, /hello.*help/i);

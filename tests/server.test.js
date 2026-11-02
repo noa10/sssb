@@ -124,14 +124,16 @@ test('mutations require CSRF and reject cross-origin requests', async () => {
   const blocked = await session.post('/api/chat/start').set('Origin', 'https://example.org').set('X-CSRF-Token', csrf.body.csrfToken).send({});
   assert.equal(blocked.status, 403);
   const allowed = await session.post('/api/chat/start').set('Origin', 'http://localhost:3000').set('X-CSRF-Token', csrf.body.csrfToken).send({});
-  assert.equal(allowed.status, 500); // Origin and CSRF accepted; the test database is offline.
+  assert.equal(allowed.status, 401); // Origin and CSRF accepted; no customer is signed in.
 });
 
 test('database failures do not create a false enquiry success', async () => {
   const app = createApp({ pool: offline, provider: fake, env });
   const session = request.agent(app);
   const csrf = await session.get('/api/csrf');
-  const response = await session.post('/api/chat/start').set('X-CSRF-Token', csrf.body.csrfToken).send({ name: 'A Person', email: 'a@example.com', phone: '12345678', company: 'A Company', consent: true });
+  const response = await session.post('/api/chat/start')
+    .set('Cookie', `sss_csrf=${csrf.body.csrfToken}; sss_customer=${'A'.repeat(43)}`)
+    .set('X-CSRF-Token', csrf.body.csrfToken).send({ consent: true });
   assert.equal(response.status, 500);
-  assert.doesNotMatch(JSON.stringify(response.body), /A Person/);
+  assert.doesNotMatch(JSON.stringify(response.body), /database unavailable/);
 });
