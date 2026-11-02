@@ -268,6 +268,33 @@ test('a product-linked knowledge item cannot be edited from the Knowledge sectio
     .expect(403);
 });
 
+test('the knowledge list omits items linked to a product', async () => {
+  const pool = {
+    async execute(sql) {
+      if (sql.includes('FROM staff_sessions')) return [[{ staff_id: '1', email: 'staff@example.com' }]];
+      if (sql.startsWith('UPDATE staff_sessions SET last_seen_at')) return [{ affectedRows: 1 }];
+      if (sql.startsWith('SELECT COUNT(*) AS total FROM knowledge_items k LEFT JOIN catalogue_products p')) {
+        assert.match(sql, /WHERE p\.id IS NULL/);
+        return [[{ total: 1 }]];
+      }
+      if (sql.startsWith('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k')) {
+        assert.match(sql, /WHERE p\.id IS NULL/);
+        return [[{
+          id: '2', title: 'Company profile', kind: 'company', source_name: 'SSSB', status: 'published',
+          created_at: '2026-11-03T00:00:00.000Z', updated_at: '2026-11-03T00:00:00.000Z', catalogue_product_id: null
+        }]];
+      }
+      throw new Error(`Unexpected simulated query: ${sql}`);
+    }
+  };
+  const app = createApp({ pool, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+  const response = await request(app).get('/api/admin/knowledge')
+    .set('Cookie', `sss_staff=${'A'.repeat(43)}`)
+    .expect(200);
+  assert.equal(response.body.total, 1);
+  assert.deepEqual(response.body.items.map((item) => item.title), ['Company profile']);
+});
+
 test('uploaded product images are served from the private upload directory', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sssb-media-'));
   try {

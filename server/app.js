@@ -340,8 +340,9 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     res.json({ ok: true });
   }));
   app.get('/api/admin/knowledge', protectedStaff, asyncRoute(async (req, res) => {
-    const [counts] = await pool.execute('SELECT COUNT(*) AS total FROM knowledge_items');
-    const [rows] = await pool.execute('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id ORDER BY k.updated_at DESC LIMIT 500');
+    // Product records own their linked knowledge; staff edit those in Products.
+    const [counts] = await pool.execute('SELECT COUNT(*) AS total FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id WHERE p.id IS NULL');
+    const [rows] = await pool.execute('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k LEFT JOIN catalogue_products p ON p.knowledge_id=k.id WHERE p.id IS NULL ORDER BY k.updated_at DESC LIMIT 500');
     const total = Number(counts[0].total);
     res.json({ items: rows.map(knowledgeItem), total, truncated: total > 500 });
   }));

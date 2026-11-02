@@ -133,7 +133,7 @@ function fakeDatabase(passwordHash) {
     }
     if (query.startsWith('SELECT p.company_id,p.slug,p.name,p.product_type,p.image_name,p.image_source,p.manufacturer_source')) return [[]];
     if (query.startsWith('SELECT k.content FROM knowledge_items k WHERE')) return [[]];
-    if (query.startsWith('SELECT COUNT(*) AS total FROM knowledge_items')) return [[{ total: data.knowledge.length }]];
+    if (query.startsWith('SELECT COUNT(*) AS total FROM knowledge_items k LEFT JOIN catalogue_products p')) return [[{ total: data.knowledge.length }]];
     if (query.startsWith('SELECT k.id,k.title,k.kind,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k')) return [[...data.knowledge.map(({ content, ...entry }) => ({ ...entry, catalogue_product_id: null }))]];
     if (query.startsWith('SELECT k.id,k.title,k.kind,k.content,k.source_name,k.status,k.created_at,k.updated_at,p.id AS catalogue_product_id FROM knowledge_items k')) return [[...data.knowledge.filter((entry) => entry.id === String(params[0])).map((entry) => ({ ...entry, catalogue_product_id: null }))]];
     throw new Error(`Unexpected simulated query: ${query}`);
