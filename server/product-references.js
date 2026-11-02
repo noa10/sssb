@@ -81,7 +81,6 @@ async function addProductReferences(pool, messages) {
     if (!candidate.text) return message;
     const references = products
       .filter((product) => matchesProduct(candidate.text, product))
-      .slice(0, 3)
       .map((product) => product.reference);
     return references.length ? { ...message, products: references } : message;
   });

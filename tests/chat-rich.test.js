@@ -97,6 +97,19 @@ test('uploaded product images use the media route', async () => {
   assert.equal(result.products[0].image, '/media/products/01234567-89ab-4cde-8f01-23456789abcd.webp');
 });
 
+test('every product named in an answer gets a card', async () => {
+  const pool = cataloguePool([
+    product('jfd', 'shadow', 'Shadow', 'Tactical diving rebreather'),
+    product('jfd', 'enforcer', 'Enforcer', 'Compact tactical rebreather'),
+    product('jfd', 'stealth-multi-role', 'Stealth Multi-Role', 'Modular life-support system'),
+    product('jfd', 'stealth-sc', 'Stealth SC', 'Semi-closed mixed-gas rebreather')
+  ]);
+  const [result] = await addProductReferences(pool, [
+    answer('The catalogue lists the JFD Shadow, JFD Enforcer, JFD Stealth Multi-Role and JFD Stealth SC.')
+  ]);
+  assert.equal(result.products.length, 4);
+});
+
 test('assistant links require an exact URL in published knowledge', async () => {
   const records = [
     { status: 'published', content: 'Manufacturer source: https://example.com/product/.' },
@@ -148,6 +161,21 @@ test('rich chat renders formatting and safe links without interpreting HTML', ()
   assert.equal(safeUrl('//evil.example/', 'https://site.example/'), null);
   assert.equal(safeUrl('https://good.example@evil.example/', 'https://site.example/'), null);
   assert.equal(safeUrl('http://evil.example/', 'https://site.example/'), null);
+});
+
+test('all product cards render when an answer names several products', () => {
+  const body = doc.createElement('div');
+  render(body, {
+    role: 'assistant',
+    content: 'Four products',
+    products: [
+      { name: 'JFD Shadow', url: '/jfd.html#shadow' },
+      { name: 'JFD Enforcer', url: '/jfd.html#enforcer' },
+      { name: 'JFD Stealth Multi-Role', url: '/jfd.html#stealth-multi-role' },
+      { name: 'JFD Stealth SC', url: '/jfd.html#stealth-sc' }
+    ]
+  }, 'https://site.example/');
+  assert.equal(nodes(body, 'article').length, 4);
 });
 
 test('visitor text remains plain and product images use local catalogue paths', () => {

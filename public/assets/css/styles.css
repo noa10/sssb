@@ -3279,6 +3279,7 @@ body.menu-open .mobile-scrim {
   display: flex;
   align-items: stretch;
   min-height: 88px;
+  background: var(--white);
   color: var(--ink);
   text-decoration: none;
 }
@@ -3287,8 +3288,10 @@ body.menu-open .mobile-scrim {
   flex: none;
   width: 88px;
   min-height: 88px;
+  padding: 6px;
   object-fit: contain;
-  background: #f3f5f2;
+  background: var(--paper-2);
+  border-right: 1px solid var(--line);
 }
 
 .chat-product-details {
@@ -3298,6 +3301,8 @@ body.menu-open .mobile-scrim {
   gap: 3px;
   min-width: 0;
   padding: 10px 12px;
+  background: var(--white);
+  color: var(--body);
   font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.35;
@@ -3319,8 +3324,17 @@ body.menu-open .mobile-scrim {
   display: block;
   padding: 7px 12px;
   border-top: 1px solid var(--line);
+  background: var(--paper);
   color: var(--signal-deep);
   font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chat-message-body .chat-product-source a {
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .chat-message-status {

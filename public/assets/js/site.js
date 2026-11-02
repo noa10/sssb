@@ -824,7 +824,7 @@
     }
 
     var rendererScript = document.createElement("script");
-    rendererScript.src = "/assets/js/chat-content.js";
+    rendererScript.src = "/assets/js/chat-content.js?v=20261103-chat-products";
     rendererScript.addEventListener("load", function () {
       rendererReady = !!window.SSSBChatContent && typeof window.SSSBChatContent.render === "function";
       if (rendererReady) renderMessages();

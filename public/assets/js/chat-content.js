@@ -161,7 +161,7 @@
     if (message.role === "assistant") {
       appendFormattedText(container, text, doc, base, Array.isArray(message.approvedLinks) ? message.approvedLinks : []);
       if (Array.isArray(message.products)) {
-        message.products.slice(0, 3).forEach(function (product) {
+        message.products.forEach(function (product) {
           appendProduct(container, product, doc, base);
         });
       }
