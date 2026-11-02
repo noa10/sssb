@@ -72,6 +72,10 @@ function assetImage(filename) {
   return IMAGE.test(filename || '') ? `/assets/img/products/${filename}` : null;
 }
 
+function companyLogo(filename) {
+  return IMAGE.test(filename || '') ? `/assets/img/companies/${filename}` : null;
+}
+
 function pageUrl(companyId, slug) {
   const entry = company(companyId);
   if (!entry || !ID.test(slug || '')) return null;
@@ -84,6 +88,7 @@ module.exports = {
   company,
   category,
   assetImage,
+  companyLogo,
   pageUrl,
   COMPANY_IDS: companies.map((item) => item.id),
   CATEGORY_IDS: categories.map((item) => item.id)

@@ -224,7 +224,7 @@ async function nextSortOrder(conn, companyId) {
 
 function imageUrl(row, company) {
   if (row.image_source === 'upload' && PRODUCT_IMAGE.test(row.image_name || '')) return `/media/products/${row.image_name}`;
-  return meta.assetImage(row.image_name) || (company ? meta.assetImage(company.logo) : null);
+  return meta.assetImage(row.image_name) || (company ? meta.companyLogo(company.logo) : null);
 }
 
 function adminProduct(row) {
@@ -410,7 +410,7 @@ async function publicCatalogue(pool) {
     key: company.id,
     name: company.name,
     url: company.page,
-    logo: meta.assetImage(company.logo),
+    logo: meta.companyLogo(company.logo),
     summary: company.summary,
     category: company.categoryId,
     categoryName: company.categoryName,

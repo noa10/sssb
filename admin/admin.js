@@ -949,8 +949,8 @@
     state.productId = null;
     state.productEditing = false;
     state.productDeleting = false;
-    state.productDirty = false;
     $('product-form').reset();
+    for (const control of $('product-form').elements) control.disabled = false;
     $('product-company').disabled = false;
     $('product-editor').hidden = true;
     $('product-detail-state').hidden = true;
@@ -966,7 +966,11 @@
     $('product-delete').textContent = 'Delete product';
     $('editor-product-status').hidden = true;
     $('product-slug-note').textContent = 'The address is generated from the name and cannot be changed later.';
-    if (state.productQuill) state.productQuill.setText('');
+    if (state.productQuill) {
+      state.productQuill.setText('');
+      state.productQuill.enable();
+    }
+    state.productDirty = false;
     showProductImage(null);
     setNotice($('product-form-notice'), '');
   }

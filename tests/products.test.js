@@ -263,8 +263,10 @@ test('the public catalogue exposes only published products and strips rich-text 
   assert.equal(catalogue.totals.companies, 5);
   assert.equal(catalogue.totals.categories, 3);
   const jfd = catalogue.companies.find((company) => company.key === 'jfd');
+  assert.equal(jfd.logo, '/assets/img/companies/jfd-logo.jpg');
   assert.equal(jfd.productCount, 1);
   assert.equal(jfd.products[0].name, 'Published Product');
+  assert.equal(jfd.products[0].imageUrl, '/assets/img/companies/jfd-logo.jpg');
   assert.equal(jfd.products[0].descriptionHtml, '<p>Public <em>description</em>.</p>');
   assert.equal(jfd.products[0].pageUrl, '/jfd.html#published-product');
   assert.equal(jfd.products[0].enquiryUrl, '/contact.html?company=jfd&product=published-product#enquiry');

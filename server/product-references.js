@@ -25,7 +25,7 @@ function matchesProduct(text, product) {
 
 function imagePath(row, company) {
   if (row.image_source === 'upload' && PRODUCT_IMAGE.test(row.image_name || '')) return `/media/products/${row.image_name}`;
-  return meta.assetImage(row.image_name) || meta.assetImage(company.logo);
+  return meta.assetImage(row.image_name) || meta.companyLogo(company.logo);
 }
 
 function manufacturerUrl(value) {
