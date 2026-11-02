@@ -67,6 +67,11 @@
     return value == null || String(value).trim() === '' ? fallback : String(value);
   }
 
+  function focusPanel(element) {
+    const rect = element.getBoundingClientRect();
+    element.focus({ preventScroll: rect.top < 0 });
+  }
+
   function el(tag, className, content) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -353,7 +358,7 @@
     }
   }
 
-  function renderConversations() {
+  function renderConversations(preserveScroll = false) {
     if (!state.conversationsLoaded) return;
     const total = state.conversationsTotal;
     const page = state.conversationsPage;
@@ -367,10 +372,12 @@
     $('conversation-next').disabled = page >= pages;
     $('conversation-pagination').hidden = total <= pageSize;
     const container = $('conversation-list');
+    const scrollTop = preserveScroll ? container.scrollTop : 0;
     container.replaceChildren();
     if (!state.conversations.length) {
       const filtered = $('conversation-search').value.trim() || $('conversation-filter').value !== 'all';
       showListState($('conversation-list-state'), filtered ? 'No enquiries match your filters.' : 'No enquiries yet. New conversations will appear here.');
+      container.scrollTop = scrollTop;
       return;
     }
     $('conversation-list-state').hidden = true;
@@ -389,6 +396,7 @@
       button.addEventListener('click', () => openConversation(item.id));
       container.append(button);
     });
+    container.scrollTop = scrollTop;
   }
 
   async function openConversation(id, focus = true) {
@@ -399,11 +407,11 @@
     const generation = state.generation;
     const sequence = ++state.conversationRequest;
     state.conversationId = id;
-    renderConversations();
+    renderConversations(true);
     $('conversation-placeholder').hidden = true;
     $('conversation-detail-content').hidden = true;
     showListState($('conversation-detail-state'), 'Loading conversation…');
-    if (focus) $('conversation-detail').focus();
+    if (focus) focusPanel($('conversation-detail'));
     try {
       const data = await request(`/api/admin/conversations/${encodeURIComponent(id)}`);
       if (!isCurrent(generation) || sequence !== state.conversationRequest) return;
@@ -556,7 +564,7 @@
     }
   }
 
-  function renderKnowledge() {
+  function renderKnowledge(preserveScroll = false) {
     const query = $('knowledge-search').value.trim().toLocaleLowerCase();
     const status = $('knowledge-filter').value;
     const filtered = state.knowledge.filter((item) => {
@@ -565,9 +573,11 @@
     });
     $('knowledge-count').textContent = state.knowledgeTruncated ? `${state.knowledge.length} of ${state.knowledgeTotal} items` : `${state.knowledgeTotal} ${state.knowledgeTotal === 1 ? 'item' : 'items'}`;
     const container = $('knowledge-list');
+    const scrollTop = preserveScroll ? container.scrollTop : 0;
     container.replaceChildren();
     if (!filtered.length) {
       showListState($('knowledge-list-state'), state.knowledge.length ? 'No content matches your filters.' : 'No content yet. Add an item to get started.');
+      container.scrollTop = scrollTop;
       return;
     }
     $('knowledge-list-state').hidden = true;
@@ -585,6 +595,7 @@
       button.addEventListener('click', () => openKnowledge(item.id));
       container.append(button);
     });
+    container.scrollTop = scrollTop;
   }
 
   function updateEditorFields() {
@@ -608,8 +619,8 @@
     $('editor-status').hidden = true;
     $('knowledge-save').textContent = 'Save content';
     updateEditorFields();
-    renderKnowledge();
-    $('knowledge-detail').focus();
+    renderKnowledge(true);
+    focusPanel($('knowledge-detail'));
   }
 
   async function openKnowledge(id, focus = true, saved = false) {
@@ -621,8 +632,8 @@
     state.editing = true;
     $('knowledge-placeholder').hidden = true;
     showListState($('knowledge-detail-state'), 'Loading content…');
-    renderKnowledge();
-    if (focus) $('knowledge-detail').focus();
+    renderKnowledge(true);
+    if (focus) focusPanel($('knowledge-detail'));
     try {
       const data = await request(`/api/admin/knowledge/${encodeURIComponent(id)}`);
       if (!isCurrent(generation) || sequence !== state.knowledgeDetailRequest) return;
@@ -661,7 +672,7 @@
     $('knowledge-status').value = item.status;
     $('knowledge-delete').hidden = false;
     updateEditorFields();
-    renderKnowledge();
+    renderKnowledge(true);
   }
 
   $('new-knowledge').addEventListener('click', newKnowledge);
@@ -669,7 +680,7 @@
   $('knowledge-cancel').addEventListener('click', () => {
     if (!canLeaveEditor()) return;
     clearEditor();
-    renderKnowledge();
+    renderKnowledge(true);
   });
   $('knowledge-delete').addEventListener('click', async () => {
     if (state.knowledgeSaving || state.knowledgeDeleting || !state.knowledgeId) return;
@@ -695,7 +706,7 @@
       await loadKnowledge();
       if (isCurrent(generation)) {
         setNotice($('global-notice'), 'Content deleted.');
-        $('knowledge-detail').focus();
+        focusPanel($('knowledge-detail'));
       }
     } catch (error) {
       if (isCurrent(generation) && !error.unauthorized) setNotice($('knowledge-form-notice'), error.message, true);
@@ -828,7 +839,7 @@
     }
   }
 
-  function renderProducts() {
+  function renderProducts(preserveScroll = false) {
     const query = $('product-search').value.trim().toLocaleLowerCase();
     const company = $('product-company-filter').value;
     const status = $('product-filter').value;
@@ -838,9 +849,11 @@
     });
     $('product-count').textContent = `${state.productTotal} ${state.productTotal === 1 ? 'product' : 'products'}`;
     const container = $('product-list');
+    const scrollTop = preserveScroll ? container.scrollTop : 0;
     container.replaceChildren();
     if (!filtered.length) {
       showListState($('product-list-state'), state.products.length ? 'No products match your filters.' : 'No products yet. Add one to publish it to the website.');
+      container.scrollTop = scrollTop;
       return;
     }
     $('product-list-state').hidden = true;
@@ -858,6 +871,7 @@
       button.addEventListener('click', () => openProduct(item.id));
       container.append(button);
     });
+    container.scrollTop = scrollTop;
   }
 
   function addSpecRow(spec = {}) {
@@ -972,7 +986,7 @@
     $('product-save').textContent = 'Save product';
     addSpecRow();
     addFeatureRow();
-    renderProducts();
+    renderProducts(true);
     $('product-name').focus();
   }
 
@@ -1023,7 +1037,7 @@
     $('product-save').textContent = 'Save product';
     $('product-delete').hidden = false;
     state.productDirty = false;
-    renderProducts();
+    renderProducts(true);
   }
 
   async function openProduct(id, focus = true, saved = false) {
@@ -1034,7 +1048,7 @@
     state.productEditing = true;
     $('product-placeholder').hidden = true;
     showListState($('product-detail-state'), 'Loading product…');
-    renderProducts();
+    renderProducts(true);
     try {
       if (!state.productCompanies.length) await loadProducts();
       const data = await request(`/api/admin/products/${encodeURIComponent(id)}`);
@@ -1042,7 +1056,7 @@
       if (!data || !data.product || String(data.product.id) !== String(id) || typeof data.product.name !== 'string') throw new Error('The server returned an invalid product.');
       editProduct(data.product);
       if (saved) setNotice($('product-form-notice'), 'Product saved. The website and AI knowledge are up to date.');
-      if (focus) $('product-detail').focus();
+      if (focus) focusPanel($('product-detail'));
     } catch (error) {
       if (!isCurrent(generation) || sequence !== state.productDetailRequest || error.unauthorized) return;
       showListState($('product-detail-state'), error.message, () => openProduct(id, false, saved));
@@ -1054,7 +1068,7 @@
   $('product-cancel').addEventListener('click', () => {
     if (!canLeaveEditor()) return;
     clearProductEditor();
-    renderProducts();
+    renderProducts(true);
   });
   $('product-delete').addEventListener('click', async () => {
     if (state.productSaving || state.productDeleting || !state.productId) return;
@@ -1077,7 +1091,7 @@
       await loadProducts();
       if (isCurrent(generation)) {
         setNotice($('global-notice'), 'Product deleted. The website and AI knowledge have been updated.');
-        $('product-detail').focus();
+        focusPanel($('product-detail'));
       }
     } catch (error) {
       if (isCurrent(generation) && !error.unauthorized) setNotice($('product-form-notice'), error.message, true);
