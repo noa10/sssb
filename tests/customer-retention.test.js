@@ -304,6 +304,15 @@ test('registration validates input, hashes passwords and creates a 30-day sessio
   assert.equal(pool.data.sessions.length, 1);
 });
 
+test('registration enforces the eight-character password minimum', async () => {
+  const { pool, app } = setup();
+  assert.equal((await register(browser(app), { email: 'seven@example.com', password: '1234567' })).status, 400);
+  const registered = await register(browser(app), { email: 'eight@example.com', password: '12345678' });
+  assert.equal(registered.status, 201);
+  assert.equal(pool.data.accounts.length, 1);
+  assert.equal(await argon2.verify(pool.data.accounts[0].password_hash, '12345678'), true);
+});
+
 test('legacy guest cookies expose only their own metadata and cannot authorize chat mutations', async () => {
   const { pool, app } = setup();
   const firstGuest = pool.guest('first@example.com');

@@ -113,8 +113,8 @@ function createCustomerService(pool) {
       const { name, phone, company } = customerProfile(req.body);
       if (!EMAIL.test(email) || email.length > 254 ||
           !validProfile({ name, phone, company }) ||
-          password.length < 14 || password.length > 1024) {
-        return res.status(400).json({ error: 'Enter your name, a valid email, phone, company and a password of at least 14 characters.' });
+          password.length < 8 || password.length > 1024) {
+        return res.status(400).json({ error: 'Enter your name, a valid email, phone, company and a password of at least 8 characters.' });
       }
       await limit(`customer:register:ip:${req.ip}`, 12, 3600);
       await limit(`customer:register:email:${email}`, 6, 3600);

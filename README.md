@@ -57,7 +57,7 @@ Run the following commands from the repository root.
    node --env-file=.env scripts/create-staff.js
    ```
 
-   Enter the staff email and a password of at least 14 characters when prompted. Password entry is hidden. There are no default staff credentials.
+   Enter the staff email and a password of at least 8 characters when prompted. Password entry is hidden. There are no default staff credentials.
 
 5. Optionally populate the initial catalogue and company knowledge as described below, then start the application:
 

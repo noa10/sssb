@@ -373,7 +373,7 @@
       '          <label for="sssb-account-password">Password<input id="sssb-account-password" name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>',
       '          <label class="chat-account-confirm-label" for="sssb-account-confirm" hidden>Confirm password<input id="sssb-account-confirm" name="confirm" type="password" autocomplete="new-password" maxlength="1024"></label>',
       '        </div>',
-      '        <p class="chat-account-help" hidden>Use at least 14 characters. Password recovery by email is not available.</p>',
+      '        <p class="chat-account-help" hidden>Use at least 8 characters. Password recovery by email is not available.</p>',
       '        <button class="btn btn--primary chat-submit chat-account-submit" type="submit">Sign in</button>',
       '        <div class="chat-account-form-actions"><button class="chat-account-switch" type="button">Create an account</button><button class="chat-account-cancel" type="button">Back to chat</button></div>',
       '      </form>',
@@ -1562,7 +1562,7 @@
       accountSubmit.textContent = registering ? "Create account" : "Sign in";
       accountSwitch.textContent = registering ? "Already have an account? Sign in" : "New here? Create an account";
       accountPassword.autocomplete = registering ? "new-password" : "current-password";
-      accountPassword.minLength = mode === "register" ? 14 : 1;
+      accountPassword.minLength = mode === "register" ? 8 : 1;
       accountConfirmLabel.hidden = mode !== "register";
       accountConfirm.required = mode === "register";
       accountHelp.hidden = mode !== "register";
