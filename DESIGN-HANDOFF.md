@@ -1,6 +1,6 @@
 # c70ef1da-ac81-4501-b65b-142844b1dbed implementation handoff
 
-This archive is the source of truth for turning the design into production code. Start from `index.html`, then preserve the visual system, responsive behavior, and interactions found in the exported files.
+This archive is the source of truth for turning the design into production code. The website files now live under `public/`; paths in the original handoff below are relative to that directory. Start from `public/index.html`, then preserve the visual system, responsive behavior, and interactions found in the exported files.
 
 ## Implementation target
 - Build production UI from the exported design, not a loose reinterpretation.
@@ -173,6 +173,5 @@ For responsive web exports, treat these as a modern breakpoint system for one ad
 - Diving Equipment: JFD and Seacraft; Parachute Systems: FXC; Inflatable Systems: Zodiac Nautic and Safe at Sea.
 - Each company page has an introduction and four individual product listings with photographs, specifications, key features and manufacturer references.
 - `assets/data/products.json` records verified product details, category mapping and company profiles. Keep static directories, model counts, company pages and contact options in agreement with it.
-- Company and model enquiry links open the matching contact selection. Unknown query values are ignored; editing a selection preserves a visitor's custom message.
-- The contact form is a client-side validation preview. It does not deliver enquiries until a real submission service is connected.
-- Brochure downloads are not linked from the current website. The old `other-tradings.html` URL redirects to the current catalogue.
+- Company and model enquiry links open chat with a matching suggested message. Unknown query values are ignored; visitors can edit the message before sending.
+- The contact page directs visitors to the chat or the office contact details. The old `other-tradings.html` URL redirects to the current catalogue.

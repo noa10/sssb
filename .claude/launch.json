@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "website-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env", "-e", "process.env.NODE_ENV='development';process.env.DB_PORT='3306';process.env.APP_ORIGIN='http://localhost:3187';process.env.AI_PROVIDER='disabled';process.env.PORT='3187';require('./app')"],
+      "port": 3187
+    },
+    {
+      "name": "website-provider-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env", "-e", "process.env.APP_ORIGIN='http://localhost:3188';process.env.PORT='3188';require('./app')"],
+      "port": 3188
+    },
+    {
+      "name": "account-chat-ui-test",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/account-chat-preview.cjs"],
+      "port": 3199
+    }
+  ]
+}
