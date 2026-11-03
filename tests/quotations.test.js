@@ -87,8 +87,9 @@ test('staff mapping serializes DATE values and preserves the contact snapshot', 
     country: '', city: '', postalCode: '', navigationArea: '', region: '',
     contact: { name: 'Alice', email: 'alice@example.com', phone: '123', company: 'Company' }, createdAt: '2026-01-02T00:00:00Z'
   });
-  assert.match(HANDOFF, /request quotation/i);
-  assert.match(HANDOFF, /email or WhatsApp/i);
+  assert.match(HANDOFF, /request a quotation/i);
+  assert.match(HANDOFF, /in this chat/i);
+  assert.match(HANDOFF, /team.*confirm/i);
   assert.match(CONFIRMATION, /quotation request/i);
 });
 

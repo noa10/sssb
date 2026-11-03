@@ -52,7 +52,7 @@ const ENTRIES = [
       'Northern Zone - Manjung branch: No. 4, Jalan SM1A/15, Fasa 1C4, 32040 Seri Manjung, Perak, Malaysia.',
       'Email: info@semenanjungselatan.com',
       'Opening hours: Monday-Friday, 09:00-17:00. Saturday, Sunday and public holidays are closed.',
-      'Enquiries: Product enquiries, procurement requirements and after-sales support can be directed to the head office or the northern branch. For quotations and availability, contact the SSSB team directly.',
+      'Enquiries: Product enquiries, procurement requirements and after-sales support can be directed to the head office or the northern branch. To request a quotation, visitors can submit a request through the website chat or contact the SSSB team directly. The team confirms pricing, availability and delivery.',
       'A useful first enquiry includes: the product category, company and model or the outcome required; where and how the equipment will be used; whether this is government procurement, direct purchase or a support request; and any delivery window, exercise date or operational deadline.',
       'Website: /contact.html'
     ].join('\n\n')
