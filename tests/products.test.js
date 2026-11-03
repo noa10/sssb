@@ -188,6 +188,16 @@ test('creating and updating a product keeps the website record and knowledge rec
   assert.match(pool.state.chunks.map((chunk) => chunk.content).join('\n'), /Updated description/);
 });
 
+test('a colliding product URL is resolved before the knowledge content is built', async () => {
+  const pool = fakePool();
+  await createProduct(pool, sampleInput());
+  const created = await createProduct(pool, sampleInput());
+  assert.equal(created.slug, 'test-rebreather-2');
+  const second = pool.state.knowledge.find((entry) => entry.content.includes('SSSB product page: /jfd.html#test-rebreather-2'));
+  assert.ok(second, 'the knowledge item should link to the resolved product URL');
+  assert.match(pool.state.chunks.find((chunk) => chunk.knowledge_id === second.id).content, /#test-rebreather-2/);
+});
+
 test('deleting a product removes its catalogue record, product knowledge and chunks', async () => {
   const pool = fakePool();
   const created = await createProduct(pool, sampleInput(), {

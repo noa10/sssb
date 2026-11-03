@@ -292,11 +292,11 @@ async function getAdminProduct(pool, id) {
 
 async function createProduct(pool, body, options = {}) {
   const product = normaliseProduct(body);
-  const content = knowledgeContent(product);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     product.slug = await uniqueSlug(conn, product.companyId, product.slug);
+    const content = knowledgeContent(product);
     product.sortOrder = product.sortOrder === undefined ? await nextSortOrder(conn, product.companyId) : product.sortOrder;
     const imageName = options.imageName || '';
     const imageSource = options.imageSource || 'asset';

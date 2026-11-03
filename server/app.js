@@ -371,8 +371,9 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     const email = clean(req.body?.email, 254).toLowerCase();
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
     await limit(`login:ip:${req.ip}`, 20, 900);
-    await limit(`login:account:${email}`, 8, 900);
     if (!EMAIL.test(email) || !password || password.length > 1024) return res.status(401).json({ error: 'Invalid email or password.' });
+    // Scope the account bucket to this client so a third party cannot lock the account for everyone.
+    await limit(`login:account:${email}:${req.ip}`, 8, 900);
     const [rows] = await pool.execute('SELECT id,email,password_hash,disabled FROM staff_users WHERE email=? LIMIT 1', [email]);
     if (!rows.length || rows[0].disabled || !await verifyPassword(rows[0].password_hash, password)) return res.status(401).json({ error: 'Invalid email or password.' });
     const old = cookies(req)[COOKIE_SESSION];

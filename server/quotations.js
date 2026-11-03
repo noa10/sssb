@@ -204,6 +204,8 @@ async function submitQuotation(pool, customerId, conversationId, payload) {
     }
     const saved = await findRequest(conn, conversationId, payload.requestId);
     await conn.execute("INSERT INTO messages (conversation_id,role,content,status) VALUES (?,'assistant',?,'answered')", [conversationId, CONFIRMATION]);
+    // A new request needs staff attention even when the enquiry had been closed.
+    await conn.execute("UPDATE conversations SET status=? WHERE id=? AND status='closed'", ['new', conversationId]);
     await conn.execute('UPDATE conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=?', [conversationId]);
     await conn.commit();
     return { quotation: quotation(saved), duplicate: false };

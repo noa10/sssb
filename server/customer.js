@@ -149,7 +149,8 @@ function createCustomerService(pool) {
         return res.status(401).json({ error: 'Invalid email or password.' });
       }
       await limit(`customer:login:ip:${req.ip}`, 20, 900);
-      await limit(`customer:login:email:${email}`, 8, 900);
+      // Scope the account bucket to this client so a third party cannot lock the account for everyone.
+      await limit(`customer:login:account:${email}:${req.ip}`, 8, 900);
       const [rows] = await pool.execute('SELECT id,email,name,phone,company,password_hash,disabled FROM customer_accounts WHERE email=?', [email]);
       const valid = await verifyPassword(rows[0]?.password_hash || DUMMY_PASSWORD_HASH, password);
       if (!rows.length || rows[0].disabled || !valid) {

@@ -841,11 +841,9 @@
       if (isCurrent(generation) && !error.unauthorized) setNotice($('knowledge-form-notice'), error.message, true);
     } finally {
       state.knowledgeDeleting = false;
-      if (state.editing) {
-        for (const control of $('knowledge-form').elements) control.disabled = false;
-        $('knowledge-kind').disabled = true;
-        busy(button, false, 'Deleting…', 'Delete content');
-      }
+      for (const control of $('knowledge-form').elements) control.disabled = false;
+      $('knowledge-kind').disabled = state.editing;
+      busy(button, false, 'Deleting…', 'Delete content');
     }
   });
   $('knowledge-kind').addEventListener('change', updateEditorFields);
@@ -1175,10 +1173,10 @@
 
   async function openProduct(id, focus = true, saved = false) {
     if (!saved && !canLeaveEditor()) return;
+    // Detach the previous product before loading so save or delete cannot target the newly selected row.
+    clearProductEditor();
     const generation = state.generation;
     const sequence = ++state.productDetailRequest;
-    state.productId = id;
-    state.productEditing = true;
     $('product-placeholder').hidden = true;
     showListState($('product-detail-state'), 'Loading product…');
     renderProducts(true);

@@ -416,6 +416,11 @@ test('quotation journey snapshots account details and safely handles simultaneou
   const detail = await staff.get(`/api/admin/conversations/${conversationId}`).expect(200);
   assert.deepEqual(detail.body.quotations.map((entry) => entry.id), [zodiac.body.quotation.id, created.id]);
   assert.deepEqual(detail.body.quotations[1], created);
+  assert.equal((await mutate(staff, 'patch', `/api/admin/conversations/${conversationId}`, { status: 'closed' })).status, 200);
+  assert.equal(pool.data.conversations.find((entry) => entry.id === conversationId).status, 'closed');
+  const reopened = await mutate(customer, 'post', '/api/chat/quotation', { ...payload, requestId: crypto.randomUUID() });
+  assert.equal(reopened.status, 201);
+  assert.equal(pool.data.conversations.find((entry) => entry.id === conversationId).status, 'new');
   pool.data.messages = pool.data.messages.filter((message) => message.conversation_id !== conversationId);
   const retained = await staff.get('/api/admin/conversations').expect(200);
   assert.equal(retained.body.conversations.find((entry) => entry.id === conversationId).hasQuotation, true);

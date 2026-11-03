@@ -198,7 +198,6 @@
 
   function hydrate(catalogue) {
     if (!catalogue || !Array.isArray(catalogue.companies) || !Array.isArray(catalogue.categories) || !catalogue.totals) return;
-    if (!catalogue.totals.products) return;
     updateHeaderCounts(catalogue);
     updateStats(catalogue);
     updateCompanyCards(catalogue);
