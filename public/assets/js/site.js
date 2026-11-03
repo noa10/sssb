@@ -348,7 +348,7 @@
       '    <span class="chat-visually-hidden chat-resize-feedback" aria-live="polite" aria-atomic="true"></span>',
       '  </div>',
       '  <header class="chat-header">',
-      '    <div class="chat-brand"><button class="chat-conversation-back" type="button" aria-label="Back to messages" aria-controls="sssb-chat-archive" title="Back to messages" hidden><svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 6-6m-6 6 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><img class="chat-brand-logo" src="/assets/img/sssb-mark.png" alt="" aria-hidden="true" width="34" height="34"><div><h2 id="sssb-chat-title">Haji</h2><p class="chat-header-label">Company and product enquiries</p></div></div>',
+      '    <div class="chat-brand"><button class="chat-conversation-back" type="button" aria-label="Back to messages" aria-controls="sssb-chat-archive" title="Back to messages" hidden><svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 6-6m-6 6 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><img class="chat-brand-logo" src="/assets/img/haji-avatar2.png" alt="" aria-hidden="true" width="34" height="34"><div><h2 id="sssb-chat-title">Haji</h2><p class="chat-header-label">Company and product enquiries</p></div></div>',
       '    <div class="chat-header-actions">',
       fullscreenControl,
       '      <button class="chat-close" type="button" aria-label="Close chat panel">',
@@ -889,10 +889,14 @@
         var button = document.createElement("button");
         button.type = "button";
         button.className = "chat-archive-item";
-        var avatar = document.createElement("span");
+        var avatar = document.createElement("img");
         avatar.className = "chat-archive-avatar";
+        avatar.src = "/assets/img/haji-avatar2.png";
+        avatar.alt = "";
         avatar.setAttribute("aria-hidden", "true");
-        avatar.textContent = "H";
+        avatar.width = 38;
+        avatar.height = 38;
+        avatar.loading = "lazy";
         var copy = document.createElement("span");
         copy.className = "chat-archive-copy";
         var top = document.createElement("span");
