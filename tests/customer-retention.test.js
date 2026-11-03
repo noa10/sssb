@@ -109,6 +109,25 @@ function fakeDatabase() {
       const conversation = data.conversations.find((entry) => entry.visitor_token_hash === params[0] && active(entry) && !data.links.some((link) => link.conversation_id === entry.id));
       return [conversation ? [conversation] : []];
     }
+    if (query.startsWith('SELECT c.id,c.status,c.created_at,c.visitor_closed_at,c.name')) {
+      const link = data.links.find((entry) => entry.customer_id === params[0] && entry.conversation_id === params[1]);
+      return [link ? data.conversations.filter((entry) => entry.id === params[1]).map((entry) => ({
+        ...entry,
+        messages_expired: Number(entry.created_at <= now - 30 * DAY)
+      })) : []];
+    }
+    if (query.startsWith('SELECT c.id,c.status,c.created_at,c.visitor_closed_at,')) {
+      const owned = data.links.filter((link) => link.customer_id === params[0]).map((link) => link.conversation_id);
+      const rows = data.conversations.filter((entry) => owned.includes(entry.id))
+        .sort((a, b) => b.created_at - a.created_at)
+        .slice(0, 20)
+        .map((entry) => ({
+          ...entry,
+          message_count: data.messages.filter((message) => message.conversation_id === entry.id).length,
+          messages_expired: Number(entry.created_at <= now - 30 * DAY)
+        }));
+      return [rows];
+    }
     if (query.startsWith('SELECT c.* FROM customer_conversations')) {
       assert.match(query, /cc\.customer_id=\? AND c\.visitor_closed_at IS NULL/);
       assert.match(query, /c\.created_at>DATE_SUB\(UTC_TIMESTAMP\(3\), INTERVAL 30 DAY\)/);
@@ -161,7 +180,7 @@ function fakeDatabase() {
     if (query.startsWith('SELECT role,content FROM (')) {
       assert.match(query, /c\.created_at>DATE_SUB\(UTC_TIMESTAMP\(3\), INTERVAL 30 DAY\)/);
       const conversation = data.conversations.find((entry) => entry.id === params[0] && active(entry));
-      return [conversation ? data.messages.filter((message) => message.conversation_id === conversation.id && (message.status === 'answered' || message.id === params[1])).slice(-10) : []];
+      return [conversation ? data.messages.filter((message) => message.conversation_id === conversation.id && (message.status === 'answered' || message.id === params[1])).slice(-40) : []];
     }
     if (query.startsWith('SELECT k.id,k.title,k.source_name,c.content FROM knowledge_chunks')) {
       assert.match(query, /k\.status='published'/);
@@ -562,6 +581,55 @@ test('customer sessions and both guest and linked chats expire at 30 days', asyn
   assert.equal((await guest.get('/api/chat/current')).body.active, false);
   assert.equal((await customer.post('/api/customer/login', { email: 'alice@example.com', password: PASSWORD })).status, 200);
   assert.equal((await customer.get('/api/chat/current')).body.active, false);
+});
+
+test('customer chat history lists only owned chats and hides expired transcripts', async () => {
+  const { pool, app } = setup();
+  const device = browser(app);
+  assert.equal((await register(device, { email: 'alice@example.com' })).status, 201);
+  const account = pool.data.accounts[0];
+  const recent = pool.guest('alice@example.com', pool.now - 2 * DAY);
+  const old = pool.guest('alice@example.com', pool.now - 31 * DAY);
+  const foreign = pool.guest('other@example.com', pool.now - DAY);
+  recent.row.status = 'new';
+  old.row.status = 'answered';
+  foreign.row.status = 'new';
+  pool.data.links.push(
+    { customer_id: account.id, conversation_id: recent.row.id },
+    { customer_id: account.id, conversation_id: old.row.id },
+    { customer_id: account.id + 1000, conversation_id: foreign.row.id }
+  );
+  pool.data.messages.push(
+    { id: 1, conversation_id: recent.row.id, role: 'user', content: 'Recent question', status: 'answered', created_at: pool.now - DAY },
+    { id: 2, conversation_id: recent.row.id, role: 'assistant', content: 'Recent answer', status: 'answered', created_at: pool.now - DAY + 1000 },
+    { id: 3, conversation_id: old.row.id, role: 'user', content: 'Old question', status: 'answered', created_at: old.row.created_at },
+    { id: 4, conversation_id: foreign.row.id, role: 'user', content: 'Private question', status: 'answered', created_at: pool.now }
+  );
+
+  assert.equal((await request(app).get('/api/customer/conversations')).status, 401);
+  assert.equal((await request(app).get(`/api/customer/conversations/${recent.row.id}`)).status, 401);
+
+  const list = await device.get('/api/customer/conversations');
+  assert.equal(list.status, 200);
+  assert.deepEqual(list.body.conversations, [
+    { id: recent.row.id, status: 'new', createdAt: recent.row.created_at, endedAt: null, messageCount: 2, messagesExpired: false, active: true },
+    { id: old.row.id, status: 'answered', createdAt: old.row.created_at, endedAt: null, messageCount: 1, messagesExpired: true, active: false }
+  ]);
+
+  const chat = await device.get(`/api/customer/conversations/${recent.row.id}`);
+  assert.equal(chat.status, 200);
+  assert.equal(chat.body.conversation.email, 'alice@example.com');
+  assert.equal(chat.body.messagesExpired, false);
+  assert.equal(chat.body.endedAt, null);
+  assert.deepEqual(chat.body.messages.map((entry) => entry.content), ['Recent question', 'Recent answer']);
+
+  const expired = await device.get(`/api/customer/conversations/${old.row.id}`);
+  assert.equal(expired.status, 200);
+  assert.equal(expired.body.messagesExpired, true);
+  assert.deepEqual(expired.body.messages, []);
+
+  assert.equal((await device.get(`/api/customer/conversations/${foreign.row.id}`)).status, 404);
+  assert.equal((await device.get('/api/customer/conversations/not-a-uuid')).status, 404);
 });
 
 test('a failed welcome message rolls back a new owned conversation and link', async () => {

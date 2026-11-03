@@ -105,6 +105,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     );
     return rows.map(publicMessage);
   };
+  const enrichedMessages = async (id) => addApprovedLinks(pool, await addProductReferences(pool, await messagesFor(id)));
 
   app.get('/api/csrf', issueCsrf);
   customers.mount(app, csrf, limit);
@@ -133,8 +134,53 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       return res.json({ active: false, customer: null, guestConversation: publicConversation(row) });
     }
     await pool.execute("UPDATE messages SET status='failed' WHERE conversation_id=? AND status='pending' AND created_at<DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 2 MINUTE)", [row.id]);
-    const messages = await addApprovedLinks(pool, await addProductReferences(pool, await messagesFor(row.id)));
+    const messages = await enrichedMessages(row.id);
     res.json({ active: true, customer, conversation: publicConversation(row), messages });
+  }));
+  app.get('/api/customer/conversations', asyncRoute(async (req, res) => {
+    const account = await customers.customer(req);
+    if (!account) return res.status(401).json({ error: 'Sign in to view your chats.' });
+    const [rows] = await pool.execute(
+      `SELECT c.id,c.status,c.created_at,c.visitor_closed_at,
+         (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id) AS message_count,
+         c.created_at<=DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) AS messages_expired
+       FROM customer_conversations cc JOIN conversations c ON c.id=cc.conversation_id
+       WHERE cc.customer_id=? ORDER BY c.created_at DESC LIMIT 20`, [account.id]
+    );
+    const active = await customers.activeForCustomer(account.id);
+    res.json({
+      conversations: rows.map((row) => ({
+        id: row.id,
+        status: row.status,
+        createdAt: row.created_at,
+        endedAt: row.visitor_closed_at,
+        messageCount: Number(row.message_count),
+        messagesExpired: Boolean(Number(row.messages_expired)),
+        active: Boolean(active && active.id === row.id)
+      }))
+    });
+  }));
+  app.get('/api/customer/conversations/:id', asyncRoute(async (req, res) => {
+    const account = await customers.customer(req);
+    if (!account) return res.status(401).json({ error: 'Sign in to view this chat.' });
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Chat not found.' });
+    const [rows] = await pool.execute(
+      `SELECT c.id,c.status,c.created_at,c.visitor_closed_at,c.name,c.email,c.phone,c.company,
+         c.created_at<=DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) AS messages_expired
+       FROM customer_conversations cc JOIN conversations c ON c.id=cc.conversation_id
+       WHERE cc.customer_id=? AND c.id=? LIMIT 1`, [account.id, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Chat not found.' });
+    const row = rows[0];
+    const expired = Boolean(Number(row.messages_expired));
+    res.json({
+      conversation: publicConversation(row),
+      status: row.status,
+      createdAt: row.created_at,
+      endedAt: row.visitor_closed_at,
+      messagesExpired: expired,
+      messages: expired ? [] : await enrichedMessages(row.id)
+    });
   }));
   app.post('/api/chat/start', csrf, asyncRoute(async (req, res) => {
     const account = await customers.customer(req);
@@ -260,9 +306,17 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
              WHERE m.conversation_id=? AND c.visitor_closed_at IS NULL
                AND c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)
                AND (m.status='answered' OR m.id=?)
-             ORDER BY m.id DESC LIMIT 10
+             ORDER BY m.id DESC LIMIT 40
            ) recent ORDER BY id ASC`, [row.id, messageId]
         );
+        const recent = [];
+        let budget = 24000;
+        for (let index = history.length - 1; index >= 0; index -= 1) {
+          const size = String(history[index].content || '').length;
+          if (recent.length && budget - size < 0) break;
+          recent.unshift(history[index]);
+          budget -= size;
+        }
         const context = history.filter((entry) => entry.role === 'user').map((entry) => entry.content).join(' ').slice(-12000);
         const sources = await searchKnowledge(pool, context);
         if (!sources.length && typeof provider.classifyConversation !== 'function') answer = UNKNOWN;
@@ -276,7 +330,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
             error.conversationExpired = true;
             throw error;
           }
-          if (sources.length) answer = await provider.answer({ messages: history, sources });
+          if (sources.length) answer = await provider.answer({ messages: recent, sources });
           else {
             let intent;
             try { intent = await provider.classifyConversation({ message: normalizedMessage }); }

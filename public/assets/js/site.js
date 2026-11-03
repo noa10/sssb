@@ -343,12 +343,12 @@
       '    <span class="chat-visually-hidden chat-resize-feedback" aria-live="polite" aria-atomic="true"></span>',
       '  </div>',
       '  <header class="chat-header">',
-      '    <div class="chat-brand"><span class="chat-brand-mark" aria-hidden="true">S</span><div><h2 id="sssb-chat-title">SSSB Assistant</h2><p class="chat-header-label">Product information</p></div></div>',
+      '    <div class="chat-brand"><img class="chat-brand-logo" src="/assets/img/sssb-mark.png" alt="" aria-hidden="true" width="34" height="34"><div><h2 id="sssb-chat-title">SSSB Assistant</h2><p class="chat-header-label">Product information</p></div></div>',
       '    <div class="chat-header-actions">',
       '      <button class="chat-account-login" type="button">Sign in</button>',
       '      <div class="chat-account-signed-in" hidden>',
       '        <button class="chat-account-toggle" type="button" aria-expanded="false" aria-controls="sssb-chat-account-menu"><span class="chat-account-dot" aria-hidden="true"></span>Account<svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>',
-      '        <div class="chat-account-menu" id="sssb-chat-account-menu" hidden><p>Signed in as <strong class="chat-account-email"></strong></p><button class="chat-account-profile" type="button">Edit account details</button><button class="chat-account-refresh" type="button" hidden>Reload conversation</button><button class="chat-account-logout" type="button">Sign out</button></div>',
+      '        <div class="chat-account-menu" id="sssb-chat-account-menu" hidden><p>Signed in as <strong class="chat-account-email"></strong></p><button class="chat-account-profile" type="button">Edit account details</button><button class="chat-history-open" type="button">Past chats</button><button class="chat-account-refresh" type="button" hidden>Reload conversation</button><button class="chat-account-logout" type="button">Sign out</button></div>',
       '      </div>',
       '      <button class="chat-fullscreen" type="button" aria-label="Fullscreen chat" aria-pressed="false" aria-controls="sssb-chat-panel" title="Expand chat to fullscreen">',
       '        <svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="chat-expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path class="chat-restore-icon" d="M4 9h5V4m6 0v5h5M4 15h5v5m6 0v-5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -396,6 +396,7 @@
       '      <p class="chat-privacy">Please do not share sensitive, confidential or classified information.</p>',
       '      <label class="chat-consent"><input name="consent" type="checkbox" required><span>I understand that my contact details and chat messages are saved for staff review, and my messages are processed by an AI provider. Messages are deleted 30 days after the chat starts; contact details are retained. <strong>(required)</strong></span></label>',
       '      <button class="btn btn--primary chat-submit" type="submit">Start chat</button>',
+      '      <button class="chat-history-open chat-history-start" type="button">Past chats</button>',
       '    </form>',
       '    <div class="chat-conversation" hidden>',
       '      <div class="chat-history" tabindex="0" aria-label="Conversation history">',
@@ -409,6 +410,21 @@
       '      </form>',
       '      <div class="chat-conversation-actions"><button class="chat-quotation-open" type="button" aria-controls="sssb-chat-quotation" aria-expanded="false">Request quotation</button><button class="chat-end" type="button">End chat</button></div>',
       '    </div>',
+      '    <section class="chat-archive" id="sssb-chat-archive" aria-labelledby="sssb-archive-title" hidden>',
+      '      <div class="chat-archive-heading"><h3 class="chat-form-heading" id="sssb-archive-title" tabindex="-1">Past chats</h3><button class="chat-archive-close" type="button">Back to chat</button></div>',
+      '      <p class="chat-archive-intro">Your earlier chats appear here for 30 days after they start.</p>',
+      '      <p class="chat-archive-status" role="status" aria-live="polite" hidden></p>',
+      '      <div class="chat-archive-list-view">',
+      '        <ul class="chat-archive-list"></ul>',
+      '        <p class="chat-archive-empty" hidden>No earlier chats yet.</p>',
+      '      </div>',
+      '      <div class="chat-archive-transcript" hidden>',
+      '        <button class="chat-archive-back" type="button">Back to past chats</button>',
+      '        <p class="chat-archive-meta"></p>',
+      '        <ol class="chat-messages chat-archive-messages" aria-label="Past chat messages"></ol>',
+      '        <p class="chat-archive-expired" hidden>Messages for this chat are no longer available.</p>',
+      '      </div>',
+      '    </section>',
       '    <section class="chat-quotation" id="sssb-chat-quotation" aria-labelledby="sssb-quotation-title" hidden>',
       '      <h3 class="chat-form-heading" id="sssb-quotation-title" tabindex="-1">Request a quotation</h3>',
       '      <p class="chat-quotation-intro">Tell us what you need. Our team will use your account details to follow up.</p>',
@@ -470,6 +486,20 @@
     var accountProfile = widget.querySelector(".chat-account-profile");
     var accountRefresh = widget.querySelector(".chat-account-refresh");
     var accountLogout = widget.querySelector(".chat-account-logout");
+    var historyButtons = widget.querySelectorAll(".chat-history-open");
+    var historyStart = widget.querySelector(".chat-history-start");
+    var archiveView = widget.querySelector("#sssb-chat-archive");
+    var archiveTitle = widget.querySelector("#sssb-archive-title");
+    var archiveStatus = widget.querySelector(".chat-archive-status");
+    var archiveListView = widget.querySelector(".chat-archive-list-view");
+    var archiveList = widget.querySelector(".chat-archive-list");
+    var archiveEmpty = widget.querySelector(".chat-archive-empty");
+    var archiveTranscript = widget.querySelector(".chat-archive-transcript");
+    var archiveBack = widget.querySelector(".chat-archive-back");
+    var archiveClose = widget.querySelector(".chat-archive-close");
+    var archiveMeta = widget.querySelector(".chat-archive-meta");
+    var archiveMessages = widget.querySelector(".chat-archive-messages");
+    var archiveExpired = widget.querySelector(".chat-archive-expired");
     var accountForm = widget.querySelector(".chat-account-form");
     var accountHeading = widget.querySelector(".chat-account-heading");
     var accountDescription = widget.querySelector(".chat-account-description");
@@ -547,6 +577,8 @@
     var animateIncoming = false;
     var activeReveal = null;
     var quotationOpen = false;
+    var historyOpen = false;
+    var historySequence = 0;
     var returnToQuotation = false;
     var quotationRequestId = null;
     var quotationPayloadSignature = "";
@@ -773,6 +805,136 @@
       refreshQuotationOptions();
     }
 
+    function setArchiveStatus(text, isError) {
+      archiveStatus.textContent = text || "";
+      archiveStatus.hidden = !text;
+      archiveStatus.classList.toggle("is-error", !!isError);
+    }
+
+    function formatChatDate(value) {
+      var date = new Date(value);
+      if (!value || isNaN(date.getTime())) return "Date unavailable";
+      return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) +
+        ", " + date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function showArchiveList() {
+      archiveListView.hidden = false;
+      archiveTranscript.hidden = true;
+      archiveMessages.replaceChildren();
+      archiveExpired.hidden = true;
+      archiveMeta.textContent = "";
+      setArchiveStatus("", false);
+    }
+
+    function renderArchiveList(conversations) {
+      archiveList.replaceChildren();
+      archiveEmpty.hidden = conversations.length > 0;
+      var fragment = document.createDocumentFragment();
+      conversations.forEach(function (item) {
+        var row = document.createElement("li");
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "chat-archive-item";
+        var heading = document.createElement("strong");
+        heading.textContent = formatChatDate(item.createdAt);
+        var meta = document.createElement("span");
+        var count = Number(item.messageCount) || 0;
+        meta.textContent = (item.active ? "Current chat" : "Ended chat") + " · " + count +
+          (count === 1 ? " message" : " messages") + (item.messagesExpired ? " · messages expired" : "");
+        button.appendChild(heading);
+        button.appendChild(meta);
+        button.addEventListener("click", function () { openArchivedChat(item.id); });
+        row.appendChild(button);
+        fragment.appendChild(row);
+      });
+      archiveList.appendChild(fragment);
+    }
+
+    async function loadHistory() {
+      var sequence = ++historySequence;
+      archiveList.replaceChildren();
+      archiveEmpty.hidden = true;
+      setArchiveStatus("Loading your chats…", false);
+      try {
+        var data = await requestJSON("/api/customer/conversations");
+        if (sequence !== historySequence || !historyOpen) return;
+        if (!data || !Array.isArray(data.conversations)) throw new Error("Unexpected chats response");
+        renderArchiveList(data.conversations);
+        setArchiveStatus("", false);
+      } catch (error) {
+        if (sequence !== historySequence || !historyOpen) return;
+        setArchiveStatus("We could not load your past chats. Please try again.", true);
+      }
+    }
+
+    function renderArchivedMessages(list) {
+      var fragment = document.createDocumentFragment();
+      list.filter(function (message) {
+        return message && (message.role === "user" || message.role === "assistant");
+      }).forEach(function (message) {
+        var item = document.createElement("li");
+        item.className = "chat-message chat-message--" + message.role;
+        var label = document.createElement("strong");
+        label.textContent = message.role === "user" ? "You" : "AI assistant";
+        var body = document.createElement("div");
+        body.className = "chat-message-body";
+        item.appendChild(label);
+        item.appendChild(body);
+        if (rendererReady) window.SSSBChatContent.render(body, message, window.location.href);
+        else {
+          var paragraph = document.createElement("p");
+          paragraph.textContent = typeof message.content === "string" ? message.content : "";
+          body.appendChild(paragraph);
+        }
+        fragment.appendChild(item);
+      });
+      archiveMessages.replaceChildren(fragment);
+    }
+
+    async function openArchivedChat(id) {
+      var sequence = ++historySequence;
+      archiveListView.hidden = true;
+      archiveTranscript.hidden = false;
+      archiveMessages.replaceChildren();
+      archiveExpired.hidden = true;
+      archiveMeta.textContent = "";
+      setArchiveStatus("Loading chat…", false);
+      try {
+        var data = await requestJSON("/api/customer/conversations/" + encodeURIComponent(id));
+        if (sequence !== historySequence || !historyOpen) return;
+        if (!data || !Array.isArray(data.messages)) throw new Error("Unexpected chat response");
+        archiveMeta.textContent = formatChatDate(data.createdAt) +
+          (data.active ? " · Current chat" : data.endedAt ? " · Ended" : "");
+        renderArchivedMessages(data.messages);
+        archiveExpired.hidden = !data.messagesExpired;
+        setArchiveStatus("", false);
+        archiveBack.focus();
+      } catch (error) {
+        if (sequence !== historySequence || !historyOpen) return;
+        setArchiveStatus(error.status === 404 ? "This chat is no longer available." : "We could not load this chat. Please try again.", true);
+      }
+    }
+
+    function openHistory() {
+      if (busy || loading || stale || hasPendingMessage() || !customer) return;
+      closeAccountMenu(false);
+      historyOpen = true;
+      showArchiveList();
+      setStatus("", false);
+      updateControls();
+      archiveTitle.focus();
+      loadHistory();
+    }
+
+    function closeHistory() {
+      if (busy) return;
+      historyOpen = false;
+      historySequence += 1;
+      updateControls();
+      if (isOpen) accountToggle.focus();
+    }
+
     function openQuotation() {
       if (busy || loading || stale || hasPendingMessage() || !customer || active !== true) return;
       closeAccountMenu(false);
@@ -826,13 +988,17 @@
     function updateControls() {
       var accountBusy = busy || loading || stale || hasPendingMessage();
       var completeProfile = hasSavedDetails();
-      var showProfile = !!customer && (profileMode || (active === false && !completeProfile));
+      if (!customer) historyOpen = false;
+      var showHistory = historyOpen;
+      var showProfile = !!customer && !showHistory && (profileMode || (active === false && !completeProfile));
       if (!customer || active !== true || accountMode || showProfile) quotationOpen = false;
-      panel.classList.toggle("has-conversation", active === true && !accountMode && !showProfile && !quotationOpen);
+      if (showHistory) quotationOpen = false;
+      panel.classList.toggle("has-conversation", active === true && !accountMode && !showProfile && !quotationOpen && !showHistory);
       panel.classList.toggle("has-account-view", !!accountMode || showProfile);
       panel.classList.toggle("has-quotation-view", quotationOpen);
-      welcome.hidden = !!accountMode || showProfile || active === true || quotationOpen;
-      accountArea.hidden = (!!customer && !showProfile) || quotationOpen;
+      panel.classList.toggle("has-history-view", showHistory);
+      welcome.hidden = !!accountMode || showProfile || active === true || quotationOpen || showHistory;
+      accountArea.hidden = (!!customer && !showProfile) || quotationOpen || showHistory;
       accountGuest.hidden = !!customer || !!accountMode;
       guestExisting.hidden = !guestConversation || !!customer;
       guestEnd.disabled = accountBusy;
@@ -859,9 +1025,12 @@
       profileHelp.hidden = completeProfile || active === true;
       profileCancel.hidden = !completeProfile && active === false;
       profileForm.querySelectorAll("input,button").forEach(function (control) { control.disabled = accountBusy; });
-      startForm.hidden = !customer || active !== false || !!accountMode || showProfile || quotationOpen;
-      conversation.hidden = !customer || active !== true || !!accountMode || showProfile || quotationOpen;
+      startForm.hidden = !customer || active !== false || !!accountMode || showProfile || quotationOpen || showHistory;
+      conversation.hidden = !customer || active !== true || !!accountMode || showProfile || quotationOpen || showHistory;
       quotationView.hidden = !quotationOpen;
+      archiveView.hidden = !showHistory;
+      historyStart.hidden = !customer || active === true || !!accountMode || showProfile || quotationOpen || showHistory;
+      historyButtons.forEach(function (button) { button.disabled = accountBusy || !customer; });
       quotationButton.disabled = accountBusy || active !== true;
       quotationButton.setAttribute("aria-expanded", String(quotationOpen));
       widget.querySelector(".chat-quotation-edit").disabled = accountBusy;
@@ -1599,6 +1768,21 @@
       if (accountToggle.disabled) return;
       accountMenuOpen = !accountMenuOpen;
       updateControls();
+    });
+    historyButtons.forEach(function (button) { button.addEventListener("click", openHistory); });
+    archiveBack.addEventListener("click", function () {
+      showArchiveList();
+      updateControls();
+      archiveTitle.focus();
+    });
+    archiveClose.addEventListener("click", closeHistory);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && isOpen && !busy && !loading && !historyOpen && !quotationOpen && !accountMode) {
+        refreshCurrent(true);
+      }
+    });
+    window.addEventListener("pageshow", function (event) {
+      if (event.persisted && isOpen && !busy && !loading) refreshCurrent(true);
     });
     document.addEventListener("pointerdown", function (event) {
       if (accountMenuOpen && !accountSignedIn.contains(event.target)) closeAccountMenu(false);

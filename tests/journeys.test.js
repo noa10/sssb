@@ -169,7 +169,7 @@ function fakeDatabase(passwordHash) {
       data.messages.push(entry);
       return [{ insertId: entry.id }];
     }
-    if (query.startsWith('SELECT role,content FROM (')) return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && (entry.status === 'answered' || entry.id === params[1])).slice(-10)]];
+    if (query.startsWith('SELECT role,content FROM (')) return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && (entry.status === 'answered' || entry.id === params[1])).slice(-40)]];
     if (query.startsWith("UPDATE messages SET status='answered'")) {
       const entry = data.messages.find((message) => message.id === params[0] && message.status === 'pending');
       if (entry) entry.status = 'answered';
@@ -234,6 +234,38 @@ async function mutate(agent, method, url, body) {
   const csrf = await agent.get('/api/csrf').expect(200);
   return agent[method](url).set('X-CSRF-Token', csrf.body.csrfToken).send(body);
 }
+
+test('the assistant receives more than the latest ten messages', async () => {
+  const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
+  const calls = [];
+  const provider = { async answer(input) { calls.push(input); return 'The MC-4 is described in the approved catalogue.'; } };
+  const app = createApp({ pool, provider, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+  const visitor = request.agent(app);
+  const account = { name: 'Memory Visitor', email: 'memory@example.com', phone: '12345678', company: 'Example Company' };
+  assert.equal((await mutate(visitor, 'post', '/api/customer/register', { ...account, password: 'A long customer password!' })).status, 201);
+  pool.data.knowledge.push({
+    id: '1', title: 'MC-4 catalogue', kind: 'company', content: 'The MC-4 is a parachute system.',
+    source_name: 'Product catalogue', status: 'published', created_at: new Date(), updated_at: new Date()
+  });
+  pool.data.chunks.push({ knowledge_id: '1', content: 'The MC-4 is a parachute system.' });
+  const start = await mutate(visitor, 'post', '/api/chat/start', { consent: true });
+  assert.equal(start.status, 201);
+  const conversationId = start.body.conversation.id;
+  for (let index = 0; index < 12; index += 1) {
+    pool.data.messages.push({
+      id: 100 + index, conversation_id: conversationId, role: index % 2 ? 'assistant' : 'user',
+      content: `Earlier message ${index}`, status: 'answered', created_at: new Date()
+    });
+  }
+
+  const sent = await mutate(visitor, 'post', '/api/chat/messages', { message: 'What is the MC-4?', requestId: crypto.randomUUID() });
+  assert.equal(sent.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].messages.length, 14);
+  assert.match(calls[0].messages[0].content, /what would you like to know/i);
+  assert.ok(calls[0].messages.some((entry) => entry.content === 'Earlier message 0'));
+  assert.equal(calls[0].messages.at(-1).content, 'What is the MC-4?');
+});
 
 test('visitor and staff journeys respect publication and conversation ownership', async () => {
   const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
