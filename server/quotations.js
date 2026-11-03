@@ -227,4 +227,18 @@ async function listQuotations(pool, conversationId) {
   }
 }
 
-module.exports = { ENQUIRY_TYPES, PROCUREMENT_ROUTES, CONFIRMATION, normaliseQuotation, quotation, submitQuotation, listQuotations };
+async function quotationConversationIds(pool, conversationIds) {
+  if (!conversationIds.length) return new Set();
+  const placeholders = conversationIds.map(() => '?').join(',');
+  try {
+    const [rows] = await pool.execute(
+      `SELECT DISTINCT conversation_id FROM quotation_requests WHERE conversation_id IN (${placeholders})`, conversationIds
+    );
+    return new Set(rows.map((row) => String(row.conversation_id).toLowerCase()));
+  } catch (error) {
+    if (error.code === 'ER_NO_SUCH_TABLE') return new Set();
+    throw error;
+  }
+}
+
+module.exports = { ENQUIRY_TYPES, PROCUREMENT_ROUTES, CONFIRMATION, normaliseQuotation, quotation, submitQuotation, listQuotations, quotationConversationIds };

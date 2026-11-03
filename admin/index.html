@@ -7,9 +7,9 @@
   <title>Staff workspace | Semenanjung Selatan</title>
   <link rel="icon" href="/assets/img/favicon.png" type="image/png">
   <link rel="stylesheet" href="/admin/vendor/quill.snow.css">
-  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261103-enquiry-quotations">
   <script src="/admin/vendor/quill.js" defer></script>
-  <script src="/admin/admin.js" defer></script>
+  <script src="/admin/admin.js?v=20261103-enquiry-quotations" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -111,7 +111,12 @@
                 <p id="conversation-status-notice" class="notice" role="status" hidden></p>
                 <div class="detail-section"><h4>Contact details</h4><dl class="contact-grid"><div><dt>Email</dt><dd id="detail-email"></dd></div><div><dt>Phone</dt><dd id="detail-phone"></dd></div><div><dt>Company</dt><dd id="detail-company"></dd></div></dl></div>
                 <div id="quotation-section" class="detail-section" hidden><div class="section-heading"><h4>Quotation requests</h4><span id="quotation-count" class="subtle"></span></div><div id="quotation-list" class="quotation-list"></div></div>
-                <div class="detail-section"><div class="section-heading"><h4>Transcript</h4><span id="message-count" class="subtle"></span></div><div id="message-list" class="message-list"></div><p id="message-empty" class="subtle" hidden>No messages in this conversation.</p></div>
+                <div class="detail-section">
+                  <div class="section-heading"><h4 id="transcript-title">Transcript</h4><span id="message-count" class="subtle" aria-live="polite"></span></div>
+                  <div id="message-list" class="message-list" role="region" aria-labelledby="transcript-title" tabindex="0" hidden></div>
+                  <p id="message-empty" class="subtle" hidden>No messages in this conversation.</p>
+                  <nav id="message-pagination" class="message-pagination" aria-label="Transcript pages" hidden></nav>
+                </div>
               </div>
             </div>
           </section>

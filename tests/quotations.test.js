@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { normaliseQuotation, quotation, submitQuotation, listQuotations, ENQUIRY_TYPES, CONFIRMATION } = require('../server/quotations');
+const { normaliseQuotation, quotation, submitQuotation, listQuotations, quotationConversationIds, ENQUIRY_TYPES, CONFIRMATION } = require('../server/quotations');
 const { HANDOFF } = require('../server/ai');
 
 const requestId = crypto.randomUUID();
@@ -169,6 +169,9 @@ test('rechecks a selected product after discovering it', async () => {
 test('admin quotation lookup ignores only a missing table', async () => {
   const pool = { async execute() { const error = new Error('unavailable'); error.code = 'ER_NO_SUCH_TABLE'; throw error; } };
   assert.deepEqual(await listQuotations(pool, 'conversation'), []);
+  assert.deepEqual(await quotationConversationIds(pool, ['conversation']), new Set());
   const other = { async execute() { throw new Error('other database failure'); } };
+  assert.deepEqual(await quotationConversationIds(other, []), new Set());
   await assert.rejects(listQuotations(other, 'conversation'), /other database failure/);
+  await assert.rejects(quotationConversationIds(other, ['conversation']), /other database failure/);
 });

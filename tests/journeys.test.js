@@ -13,7 +13,7 @@ const { CONFIRMATION } = require('../server/quotations');
 
 // This exercises the HTTP contracts with a simulated database. MariaDB still needs its own integration test.
 function fakeDatabase(passwordHash) {
-  const data = { conversations: [], messages: [], quotations: [], catalogueProducts: [], knowledge: [], chunks: [], sessions: [], accounts: [], customerSessions: [], links: [], quotationTableMissing: false, failQuotationConfirmation: false, rejectQuotationLock: false, rateLimitExceeded: false };
+  const data = { conversations: [], messages: [], quotations: [], catalogueProducts: [], knowledge: [], chunks: [], sessions: [], accounts: [], customerSessions: [], links: [], quotationTableMissing: false, failQuotationList: false, failQuotationConfirmation: false, rejectQuotationLock: false, rateLimitExceeded: false };
   let transactionQueue = Promise.resolve();
   const staff = { id: '1', email: 'staff@example.com', password_hash: passwordHash, disabled: 0 };
   const execute = async (sql, params = []) => {
@@ -130,6 +130,16 @@ function fakeDatabase(passwordHash) {
     }
     if (query === 'SELECT status FROM knowledge_items WHERE id=? FOR UPDATE') {
       return [data.knowledge.filter((entry) => String(entry.id) === String(params[0])).map(({ status }) => ({ status }))];
+    }
+    if (query.startsWith('SELECT DISTINCT conversation_id FROM quotation_requests WHERE conversation_id IN')) {
+      if (data.quotationTableMissing) {
+        const error = new Error('quotation table missing');
+        error.code = 'ER_NO_SUCH_TABLE';
+        throw error;
+      }
+      if (data.failQuotationList) throw new Error('quotation lookup failed');
+      const ids = new Set(data.quotations.filter((entry) => params.includes(entry.conversation_id)).map((entry) => entry.conversation_id));
+      return [[...ids].map((conversation_id) => ({ conversation_id }))];
     }
     if (query.startsWith('SELECT * FROM quotation_requests') || query.startsWith('INSERT INTO quotation_requests')) {
       if (data.quotationTableMissing) {
@@ -293,6 +303,7 @@ test('visitor and staff journeys respect publication and conversation ownership'
 
   const list = await staff.get('/api/admin/conversations').expect(200);
   assert.equal(list.body.total, 1);
+  assert.equal(list.body.conversations[0].hasQuotation, false);
   const detail = await staff.get(`/api/admin/conversations/${conversationId}`).expect(200);
   assert.equal(detail.body.conversation.email, 'visitor@example.com');
   assert.equal(detail.body.messages.length, 15);
@@ -317,6 +328,11 @@ test('quotation journey snapshots account details and safely handles simultaneou
   const conversationId = started.body.conversation.id;
   assert.equal((await mutate(other, 'post', '/api/customer/register', { ...details, email: 'other@example.com' })).status, 201);
   assert.equal((await mutate(other, 'post', '/api/chat/quotation', { conversationId, requestId: crypto.randomUUID() })).status, 401);
+  const otherConversationId = (await mutate(other, 'post', '/api/chat/start', { consent: true })).body.conversation.id;
+  assert.equal((await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password: 'A long test password!' })).status, 200);
+  const before = await staff.get('/api/admin/conversations').expect(200);
+  assert.equal(before.body.conversations.find((entry) => entry.id === conversationId).hasQuotation, false);
+  assert.equal(before.body.conversations.find((entry) => entry.id === otherConversationId).hasQuotation, false);
 
   const profile = { name: 'Updated Name', phone: '87654321', company: 'Updated Co' };
   assert.equal((await mutate(customer, 'post', '/api/customer/profile', profile)).status, 200);
@@ -362,12 +378,20 @@ test('quotation journey snapshots account details and safely handles simultaneou
   assert.equal(zodiac.status, 201);
   assert.equal(zodiac.body.quotation.procurementRoute, 'unsure');
   assert.equal(zodiac.body.quotation.region, 'Paris');
-  assert.equal((await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password: 'A long test password!' })).status, 200);
+  const marked = await staff.get('/api/admin/conversations').expect(200);
+  assert.equal(marked.body.conversations.find((entry) => entry.id === conversationId).hasQuotation, true);
+  assert.equal(marked.body.conversations.find((entry) => entry.id === otherConversationId).hasQuotation, false);
   const detail = await staff.get(`/api/admin/conversations/${conversationId}`).expect(200);
   assert.deepEqual(detail.body.quotations.map((entry) => entry.id), [zodiac.body.quotation.id, created.id]);
   assert.deepEqual(detail.body.quotations[1], created);
+  pool.data.messages = pool.data.messages.filter((message) => message.conversation_id !== conversationId);
+  const retained = await staff.get('/api/admin/conversations').expect(200);
+  assert.equal(retained.body.conversations.find((entry) => entry.id === conversationId).hasQuotation, true);
   assert.equal((await mutate(staff, 'delete', `/api/admin/conversations/${conversationId}`, {})).status, 200);
   assert.equal(pool.data.quotations.length, 0);
+  const remaining = await staff.get('/api/admin/conversations').expect(200);
+  assert.equal(remaining.body.conversations.length, 1);
+  assert.equal(remaining.body.conversations[0].hasQuotation, false);
 });
 
 test('quotation requests use current published products and retain saved retries', async () => {
@@ -475,7 +499,12 @@ test('quotation failures leave no partial data and admin survives a missing migr
   await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password: 'A long test password!' });
   const staffDetail = await staff.get(`/api/admin/conversations/${conversationId}`).expect(200);
   assert.deepEqual(staffDetail.body.quotations, []);
+  const staffList = await staff.get('/api/admin/conversations').expect(200);
+  assert.equal(staffList.body.conversations[0].hasQuotation, false);
   pool.data.quotationTableMissing = false;
+  pool.data.failQuotationList = true;
+  assert.equal((await staff.get('/api/admin/conversations')).status, 500);
+  pool.data.failQuotationList = false;
   pool.data.failQuotationConfirmation = true;
   assert.equal((await mutate(customer, 'post', '/api/chat/quotation', payload)).status, 500);
   assert.equal(pool.data.quotations.length, 0);

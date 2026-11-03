@@ -2,6 +2,7 @@
 
 (() => {
   const $ = (id) => document.getElementById(id);
+  const messagePageSize = 10;
   const state = {
     authenticated: false,
     generation: 0,
@@ -15,6 +16,8 @@
     conversationsSearchTimer: null,
     conversationId: null,
     conversationRequest: 0,
+    messages: [],
+    messagePage: 1,
     conversationSaving: false,
     conversationDeleting: false,
     knowledge: [],
@@ -89,10 +92,16 @@
     state.conversationId = null;
     state.conversationRequest += 1;
     state.conversationDeleting = false;
+    state.messages = [];
+    state.messagePage = 1;
     $('conversation-placeholder').hidden = false;
     $('conversation-detail-content').hidden = true;
     $('conversation-detail-state').hidden = true;
     $('message-list').replaceChildren();
+    $('message-list').hidden = true;
+    $('message-pagination').replaceChildren();
+    $('message-pagination').hidden = true;
+    $('message-empty').hidden = true;
     $('quotation-section').hidden = true;
     $('quotation-list').replaceChildren();
     $('quotation-count').textContent = '';
@@ -321,7 +330,7 @@
     }
   }
 
-  async function loadConversations() {
+  async function loadConversations(options = {}) {
     clearTimeout(state.conversationsSearchTimer);
     state.conversationsSearchTimer = null;
     const generation = state.generation;
@@ -335,8 +344,10 @@
     $('conversation-count').textContent = 'Loading enquiries…';
     $('conversation-previous').disabled = true;
     $('conversation-next').disabled = true;
-    showListState($('conversation-list-state'), 'Loading enquiries…');
-    $('conversation-list').replaceChildren();
+    if (!options.preserveList) {
+      showListState($('conversation-list-state'), 'Loading enquiries…');
+      $('conversation-list').replaceChildren();
+    }
     try {
       const data = await request(`/api/admin/conversations?${params}`);
       if (!isCurrent(generation) || sequence !== state.conversationsRequest) return;
@@ -348,7 +359,7 @@
       const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
       if (data.page > lastPage) {
         state.conversationsPage = lastPage;
-        await loadConversations();
+        await loadConversations(options);
         return;
       }
       state.conversationsLoaded = true;
@@ -357,6 +368,7 @@
       if (!isCurrent(generation) || sequence !== state.conversationsRequest || error.unauthorized) return;
       $('conversation-count').textContent = 'Enquiries unavailable';
       $('conversation-pagination').hidden = true;
+      $('conversation-list').replaceChildren();
       showListState($('conversation-list-state'), error.message, loadConversations);
     }
   }
@@ -396,6 +408,7 @@
       const meta = el('span', 'item-meta', [text(item.email, ''), text(item.company, '')].filter(Boolean).join(' • ') || 'No contact details');
       const date = el('span', 'item-date', niceDate(item.updatedAt || item.createdAt));
       button.append(title, statusBadge, meta, date);
+      if (item.hasQuotation === true) button.append(el('span', 'item-quotation', 'Quotation requested'));
       button.addEventListener('click', () => openConversation(item.id));
       container.append(button);
     });
@@ -458,6 +471,70 @@
     });
   }
 
+  function renderTranscript() {
+    const total = state.messages.length;
+    const pages = Math.max(1, Math.ceil(total / messagePageSize));
+    state.messagePage = Math.min(state.messagePage, pages);
+    const start = (state.messagePage - 1) * messagePageSize;
+    const messages = $('message-list');
+    const pageMessages = document.createDocumentFragment();
+    state.messages.slice(start, start + messagePageSize).forEach((message) => {
+      const article = el('article', 'message');
+      if (message.role === 'assistant') article.classList.add('message--assistant');
+      const header = el('div', 'message-header');
+      const role = message.role === 'user' ? 'Visitor' : message.role === 'assistant' ? 'Assistant' : text(message.role, 'Message');
+      header.append(el('span', 'message-role', role), el('span', 'message-meta', [text(message.status, ''), niceDate(message.createdAt)].filter(Boolean).join(' • ')));
+      article.append(header, el('p', 'message-content', text(message.content, '')));
+      pageMessages.append(article);
+    });
+    messages.replaceChildren(pageMessages);
+    messages.hidden = total === 0;
+    messages.scrollTop = 0;
+    const end = Math.min(start + messagePageSize, total);
+    const range = start + 1 === end ? String(end) : `${start + 1}–${end}`;
+    $('message-count').textContent = total > messagePageSize
+      ? `${range} of ${total} messages`
+      : `${total} ${total === 1 ? 'message' : 'messages'}`;
+    $('message-empty').hidden = total !== 0;
+
+    const navigation = $('message-pagination');
+    navigation.replaceChildren();
+    navigation.hidden = pages <= 1;
+    if (pages <= 1) return;
+    const addPageButton = (label, page, disabled = false, numbered = false) => {
+      const button = el('button', 'button button--secondary', label);
+      button.type = 'button';
+      button.disabled = disabled;
+      button.setAttribute('aria-controls', 'message-list');
+      if (numbered) {
+        button.setAttribute('aria-label', `Page ${page}`);
+        if (page === state.messagePage) button.setAttribute('aria-current', 'page');
+      }
+      button.addEventListener('click', () => {
+        if (page < 1 || page > pages || page === state.messagePage) return;
+        state.messagePage = page;
+        renderTranscript();
+        navigation.querySelector('[aria-current="page"]').focus({ preventScroll: true });
+      });
+      navigation.append(button);
+    };
+    addPageButton('Previous', state.messagePage - 1, state.messagePage === 1);
+    const visiblePages = [...new Set([1, pages, state.messagePage - 1, state.messagePage, state.messagePage + 1])]
+      .filter((page) => page >= 1 && page <= pages).sort((a, b) => a - b);
+    let previousPage = 0;
+    visiblePages.forEach((page) => {
+      if (page - previousPage === 2) addPageButton(String(page - 1), page - 1, false, true);
+      else if (page - previousPage > 2) {
+        const gap = el('span', 'subtle', '…');
+        gap.setAttribute('aria-hidden', 'true');
+        navigation.append(gap);
+      }
+      addPageButton(String(page), page, false, true);
+      previousPage = page;
+    });
+    addPageButton('Next', state.messagePage + 1, state.messagePage === pages);
+  }
+
   async function openConversation(id, focus = true) {
     if (state.conversationSaving || state.conversationDeleting) {
       setNotice($('conversation-status-notice'), state.conversationDeleting ? 'Wait for the enquiry to finish deleting.' : 'Wait for the status to finish saving.', true);
@@ -466,6 +543,9 @@
     const generation = state.generation;
     const sequence = ++state.conversationRequest;
     state.conversationId = id;
+    state.messages = [];
+    state.messagePage = 1;
+    renderTranscript();
     renderConversations(true);
     $('conversation-placeholder').hidden = true;
     $('conversation-detail-content').hidden = true;
@@ -488,20 +568,9 @@
       $('conversation-delete').textContent = 'Delete enquiry';
       setNotice($('conversation-status-notice'), '');
       renderQuotations(Array.isArray(data.quotations) ? data.quotations : []);
-      const messages = $('message-list');
-      messages.replaceChildren();
-      data.messages.forEach((message) => {
-        const article = el('article', 'message');
-        if (message.role === 'assistant') article.classList.add('message--assistant');
-        const header = el('div', 'message-header');
-        const role = message.role === 'user' ? 'Visitor' : message.role === 'assistant' ? 'Assistant' : text(message.role, 'Message');
-        header.append(el('span', 'message-role', role), el('span', 'message-meta', [text(message.status, ''), niceDate(message.createdAt)].filter(Boolean).join(' • ')));
-        article.append(header, el('p', 'message-content', text(message.content, '')));
-        messages.append(article);
-      });
-      $('message-count').textContent = `${data.messages.length} ${data.messages.length === 1 ? 'message' : 'messages'}`;
+      state.messages = data.messages;
       $('message-empty').textContent = conversation.messagesExpired ? 'Messages expire 30 days after the conversation starts.' : 'No messages in this conversation.';
-      $('message-empty').hidden = data.messages.length !== 0;
+      renderTranscript();
       $('conversation-detail-state').hidden = true;
       $('conversation-detail-content').hidden = false;
     } catch (error) {
@@ -589,13 +658,13 @@
   $('conversation-previous').addEventListener('click', () => {
     if (state.conversationsLoaded && state.conversationsPage > 1) {
       state.conversationsPage -= 1;
-      loadConversations();
+      loadConversations({ preserveList: true });
     }
   });
   $('conversation-next').addEventListener('click', () => {
     if (state.conversationsLoaded && state.conversationsPage * state.conversationsPageSize < state.conversationsTotal) {
       state.conversationsPage += 1;
-      loadConversations();
+      loadConversations({ preserveList: true });
     }
   });
 

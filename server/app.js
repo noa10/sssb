@@ -7,7 +7,7 @@ const multer = require('multer');
 const { createProvider, requiresHandoff, filterAnswer, HANDOFF, UNKNOWN } = require('./ai');
 const { indexChunks, extractPdf, searchKnowledge } = require('./knowledge');
 const { createCustomerService, customerProfile, validProfile } = require('./customer');
-const { normaliseQuotation, submitQuotation, listQuotations } = require('./quotations');
+const { normaliseQuotation, submitQuotation, listQuotations, quotationConversationIds } = require('./quotations');
 const { RETENTION_DAYS } = require('./retention');
 const { isOneTypo } = require('./text');
 const { addProductReferences } = require('./product-references');
@@ -349,7 +349,9 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const [counts] = await pool.execute(`SELECT COUNT(*) AS total FROM conversations c ${where}`, params);
     const [rows] = await pool.execute(`SELECT c.*, (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)) AS message_count FROM conversations c ${where} ORDER BY c.updated_at DESC LIMIT 50 OFFSET ${((page - 1) * 50)}`, params);
-    res.json({ conversations: rows.map(staffConversation), total: Number(counts[0].total), page, pageSize: 50 });
+    const quotationIds = await quotationConversationIds(pool, rows.map((row) => row.id));
+    const conversations = rows.map((row) => ({ ...staffConversation(row), hasQuotation: quotationIds.has(String(row.id).toLowerCase()) }));
+    res.json({ conversations, total: Number(counts[0].total), page, pageSize: 50 });
   }));
   app.get('/api/admin/conversations/:id', protectedStaff, asyncRoute(async (req, res) => {
     if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Enquiry not found.' });
