@@ -450,6 +450,41 @@ test('chat remains usable if session storage is unavailable', async (t) => {
   assert.equal(chat.find('.chat-panel').hidden, true);
 });
 
+test('Shark Marine seed products match the page and published catalogue rendering', async (t) => {
+  const seed = require('../public/assets/data/products.json');
+  const products = seed.companies['shark-marine'];
+  const html = fs.readFileSync(path.join(publicDir, 'shark-marine.html'), 'utf8');
+  const dom = new JSDOM(html, { url: 'https://example.test/shark-marine.html', runScripts: 'outside-only' });
+  t.after(() => dom.window.close());
+  const { document } = dom.window;
+  assert.equal(document.querySelectorAll('.company-products-grid article').length, products.length);
+  for (const product of products) {
+    const article = document.getElementById(product.id);
+    assert.ok(article, product.id);
+    assert.equal(article.querySelector('img').getAttribute('src'), `assets/img/products/${product.image}`);
+    assert.ok(fs.existsSync(path.join(publicDir, 'assets/img/products', product.image)));
+    assert.equal(article.querySelector('.product-detail-actions a').getAttribute('href'),
+      `contact.html?company=shark-marine&product=${product.id}#enquiry`);
+  }
+  const published = products.map((product) => ({
+    key: product.id, name: product.name, type: product.type, summary: product.summary,
+    imageUrl: `/assets/img/products/${product.image}`, photo: product.photo,
+    specs: product.specs.map(([label, value]) => ({ label, value })),
+    specNote: product.spec_note || '', features: product.features, sourceUrl: product.source,
+    enquiryUrl: `/contact.html?company=shark-marine&product=${product.id}#enquiry`
+  }));
+  dom.window.fetch = async () => response({
+    companies: [{ key: 'shark-marine', name: 'Shark Marine', url: 'shark-marine.html', productCount: published.length, products: published }],
+    categories: [{ id: 'diving', companyCount: 3, productCount: 20 }], totals: { categories: 3, companies: 6, products: 32 }
+  });
+  dom.window.eval(catalogueScript);
+  await waitFor(() => document.querySelector('#floating-gps .product-detail-actions a').getAttribute('href').startsWith('/contact.html'));
+  assert.equal(document.querySelectorAll('.company-products-grid article').length, products.length);
+  assert.match(document.querySelector('#floating-gps .product-spec-note').textContent, /fixes at the surface/);
+  assert.equal(document.querySelector('#e-tac .product-detail-actions a').getAttribute('href'),
+    '/contact.html?company=shark-marine&product=e-tac#enquiry');
+});
+
 test('the privacy page loads catalogue counts into its navigation', async (t) => {
   const html = fs.readFileSync(path.join(publicDir, 'privacy.html'), 'utf8');
   const dom = new JSDOM(html, { url: 'https://example.test/privacy.html', runScripts: 'outside-only' });

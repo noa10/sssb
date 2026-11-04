@@ -76,6 +76,7 @@ For responsive web exports, treat these as a modern breakpoint system for one ad
 - `products.html`
 - `safe-at-sea.html`
 - `seacraft.html`
+- `shark-marine.html`
 - `zodiac-nautic.html`
 
 ## Styles
@@ -170,8 +171,8 @@ For responsive web exports, treat these as a modern breakpoint system for one ad
 
 ## Current product structure
 - `products.html` is the full catalogue entry point. Desktop/mobile navigation and footers use the same three category routes.
-- Diving Equipment: JFD and Seacraft; Parachute Systems: FXC; Inflatable Systems: Zodiac Nautic and Safe at Sea.
-- Each company page has an introduction and four individual product listings with photographs, specifications, key features and manufacturer references.
+- Diving Equipment: JFD, Seacraft and Shark Marine; Parachute Systems: FXC; Inflatable Systems: Zodiac Nautic and Safe at Sea.
+- Each company page has an introduction and individual product listings with photographs, specifications, key features and manufacturer references.
 - `assets/data/products.json` records verified product details, category mapping and company profiles. Keep static directories, model counts, company pages and contact options in agreement with it.
 - Company and model enquiry links open chat with a matching suggested message. Unknown query values are ignored; visitors can edit the message before sending.
 - The contact page directs visitors to the chat or the office contact details. The old `other-tradings.html` URL redirects to the current catalogue.

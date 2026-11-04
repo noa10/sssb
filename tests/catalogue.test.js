@@ -90,9 +90,9 @@ function fakePool() {
 
 test('catalogue conversion preserves product details and source attribution', () => {
   const entries = buildCatalogue(catalogue);
-  assert.equal(entries.filter((entry) => entry.kind === 'product').length, 23);
-  assert.equal(entries.filter((entry) => entry.kind === 'company').length, 5);
-  assert.equal(new Set(entries.map((entry) => entry.key)).size, 28);
+  assert.equal(entries.filter((entry) => entry.kind === 'product').length, 32);
+  assert.equal(entries.filter((entry) => entry.kind === 'company').length, 6);
+  assert.equal(new Set(entries.map((entry) => entry.key)).size, 38);
   const model = entries.find((entry) => entry.key === 'product:seacraft/future-1000');
   assert.match(model.content, /15\.9 kg/);
   assert.match(model.content, /Specification note:/);
@@ -103,6 +103,11 @@ test('catalogue conversion preserves product details and source attribution', ()
   const tc1000 = entries.find((entry) => entry.key === 'product:jfd/tc1000-transport-chamber');
   assert.match(tc1000.content, /JFD Cowan two-person transport chamber/);
   assert.match(tc1000.content, /60 MSW/);
+  const etac = entries.find((entry) => entry.key === 'product:shark-marine/e-tac');
+  assert.match(etac.content, /Maximum operating depth: 50 m/);
+  assert.match(etac.content, /Manufacturer source: https:\/\/www\.sharkmarine\.com\/e-tac/);
+  assert.match(etac.content, /\/shark-marine\.html#e-tac/);
+  assert.match(entries.find((entry) => entry.key === 'product:shark-marine/floating-gps').content, /fixes at the surface/);
 });
 
 test('catalogue conversion rejects malformed or duplicate product IDs', () => {

@@ -270,7 +270,7 @@ test('the public catalogue exposes only published products and strips rich-text 
   await updateProduct(pool, published.id, { descriptionHtml: '<p>Public <em>description</em>.</p><script>alert(1)</script>' });
   const catalogue = await publicCatalogue(pool);
   assert.equal(catalogue.totals.products, 1);
-  assert.equal(catalogue.totals.companies, 5);
+  assert.equal(catalogue.totals.companies, 6);
   assert.equal(catalogue.totals.categories, 3);
   const jfd = catalogue.companies.find((company) => company.key === 'jfd');
   assert.equal(jfd.logo, '/assets/img/companies/jfd-logo.jpg');
@@ -281,6 +281,20 @@ test('the public catalogue exposes only published products and strips rich-text 
   assert.equal(jfd.products[0].pageUrl, '/jfd.html#published-product');
   assert.equal(jfd.products[0].enquiryUrl, '/contact.html?company=jfd&product=published-product#enquiry');
   assert.equal(catalogue.categories.find((category) => category.id === 'diving').productCount, 1);
+});
+
+test('Shark Marine products are published in the diving catalogue', async () => {
+  const pool = fakePool();
+  await createProduct(pool, sampleInput({ companyId: 'shark-marine', name: 'Example System', status: 'published' }));
+  const catalogue = await publicCatalogue(pool);
+  const shark = catalogue.companies.find((company) => company.key === 'shark-marine');
+  const diving = catalogue.categories.find((category) => category.id === 'diving');
+  assert.equal(shark.productCount, 1);
+  assert.equal(shark.products[0].pageUrl, '/shark-marine.html#example-system');
+  assert.equal(shark.products[0].enquiryUrl, '/contact.html?company=shark-marine&product=example-system#enquiry');
+  assert.ok(diving.companyKeys.includes('shark-marine'));
+  assert.equal(diving.companyCount, 3);
+  assert.equal(diving.productCount, 1);
 });
 
 test('image uploads are identified by magic bytes and stored outside the public directory', async () => {

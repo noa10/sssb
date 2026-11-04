@@ -416,6 +416,300 @@
         "source": "https://seacraft.eu/products/accessories-and-spares/enc3-pro/"
       }
     ],
+    "shark-marine": [
+      {
+        "id": "e-tac",
+        "name": "E-TAC",
+        "type": "Portable diver navigation system",
+        "image": "shark-marine-e-tac.png",
+        "photo": false,
+        "summary": "A portable navigation system designed for combat divers and extended missions, combining position and orientation sensors with a still and video camera.",
+        "specs": [
+          [
+            "Maximum operating depth",
+            "50 m"
+          ],
+          [
+            "Battery",
+            "Rechargeable lithium; up to 10 hours"
+          ],
+          [
+            "Dimensions",
+            "19 × 14 × 8 cm"
+          ],
+          [
+            "Weight in air",
+            "1.2 kg"
+          ]
+        ],
+        "features": [
+          "Three-axis gyroscope, accelerometer and magnetometer",
+          "Depth sensor and GPS receiver",
+          "Still and video camera"
+        ],
+        "source": "https://www.sharkmarine.com/e-tac"
+      },
+      {
+        "id": "navigator",
+        "name": "Navigator",
+        "type": "Diver navigation and sonar system",
+        "image": "shark-marine-navigator.png",
+        "photo": false,
+        "summary": "A modular diver-operated system that combines underwater navigation and sonar imaging for search, inspection and other missions.",
+        "specs": [
+          [
+            "System",
+            "Diver-operated navigation and imaging"
+          ],
+          [
+            "Software",
+            "DiveLog"
+          ],
+          [
+            "Design",
+            "Modular"
+          ],
+          [
+            "Applications",
+            "Search and inspection"
+          ]
+        ],
+        "features": [
+          "Sonar imaging for underwater operations",
+          "DiveLog navigation and sensor operation",
+          "Compatible accessories include NavCam and Doppler navigation"
+        ],
+        "spec_note": "Equipment and sensor options depend on the configuration.",
+        "source": "https://www.sharkmarine.com/navigator"
+      },
+      {
+        "id": "dive-tablet-ii",
+        "name": "Dive Tablet II",
+        "type": "Underwater navigation tablet",
+        "image": "shark-marine-dive-tablet-ii.png",
+        "photo": false,
+        "summary": "A compact underwater tablet for navigation, mapping and sensor management using Shark Marine's DiveLog software.",
+        "specs": [
+          [
+            "System",
+            "Underwater navigation tablet"
+          ],
+          [
+            "Software",
+            "DiveLog"
+          ],
+          [
+            "Positioning",
+            "Dead reckoning, GPS, DNS or USBL"
+          ],
+          [
+            "Applications",
+            "Navigation and mapping"
+          ]
+        ],
+        "features": [
+          "Route guidance and mapping",
+          "Supports location-tagged images and video",
+          "Sub-NET enables diver tracking and communications"
+        ],
+        "spec_note": "Available positioning methods and communications depend on connected equipment and configuration.",
+        "source": "https://www.sharkmarine.com/divetablet2"
+      },
+      {
+        "id": "navcam",
+        "name": "NavCam",
+        "type": "Navigator camera accessory",
+        "image": "shark-marine-navcam.png",
+        "photo": false,
+        "summary": "A camera accessory for the Navigator that records still images and video in DiveLog, with position information when available.",
+        "specs": [
+          [
+            "System",
+            "Navigator accessory"
+          ],
+          [
+            "Still images",
+            "Up to 1920 × 1080"
+          ],
+          [
+            "Video",
+            "Up to 1280 × 720"
+          ],
+          [
+            "Recording",
+            "DiveLog"
+          ]
+        ],
+        "features": [
+          "Plug-and-play camera connection",
+          "Still image and video recording",
+          "Location information associated with recordings when available"
+        ],
+        "spec_note": "The image shows a Navigator system configuration; NavCam is an accessory.",
+        "source": "https://www.sharkmarine.com/accessories"
+      },
+      {
+        "id": "doppler-navigation-system",
+        "name": "Doppler Navigation System (DNS)",
+        "type": "Underwater navigation accessory",
+        "image": "shark-marine-dns.png",
+        "photo": false,
+        "summary": "A Doppler navigation accessory that tracks movement relative to the seabed after an initial position is established.",
+        "specs": [
+          [
+            "System",
+            "Doppler navigation"
+          ],
+          [
+            "Reference",
+            "Movement relative to the seabed"
+          ],
+          [
+            "Position",
+            "Requires an initial position"
+          ],
+          [
+            "Use",
+            "Underwater navigation"
+          ]
+        ],
+        "features": [
+          "Tracks movement without continuous surface fixes",
+          "Can support navigation through gaps in acoustic positioning",
+          "Used with compatible Shark Marine systems"
+        ],
+        "source": "https://www.sharkmarine.com/accessories"
+      },
+      {
+        "id": "floating-gps",
+        "name": "Floating GPS",
+        "type": "Surface positioning accessory",
+        "image": "shark-marine-floating-gps.png",
+        "photo": false,
+        "summary": "A floating GPS accessory that supplies surface position fixes to a compatible underwater navigation system.",
+        "specs": [
+          [
+            "System",
+            "Floating GPS receiver"
+          ],
+          [
+            "Position fixes",
+            "At the surface"
+          ],
+          [
+            "Extension kit",
+            "25 m option"
+          ],
+          [
+            "Use",
+            "Underwater navigation support"
+          ]
+        ],
+        "features": [
+          "Provides surface position information",
+          "Can help correct accumulated Doppler navigation error",
+          "Extension option for divers operating at depth"
+        ],
+        "spec_note": "The image shows a Navigator with a floating GPS configuration; the receiver obtains fixes at the surface.",
+        "source": "https://www.sharkmarine.com/accessories"
+      },
+      {
+        "id": "underwater-head-mounted-display",
+        "name": "Underwater Head-Mounted Display (UHMD)",
+        "type": "Diver display accessory",
+        "image": "shark-marine-uhmd.png",
+        "photo": false,
+        "summary": "A head-mounted display that brings Navigator information to the diver's mask during underwater operations.",
+        "specs": [
+          [
+            "System",
+            "Navigator display accessory"
+          ],
+          [
+            "Display options",
+            "Monocular or binocular"
+          ],
+          [
+            "Mounting",
+            "Mask or helmet options"
+          ],
+          [
+            "Use",
+            "Diver information display"
+          ]
+        ],
+        "features": [
+          "Navigator information visible at the mask",
+          "Monocular and binocular versions",
+          "Mounting options for different masks and helmets"
+        ],
+        "source": "https://www.sharkmarine.com/accessories"
+      },
+      {
+        "id": "sub-net",
+        "name": "Sub-NET",
+        "type": "Underwater communications system",
+        "image": "shark-marine-sub-net.jpg",
+        "photo": false,
+        "summary": "An underwater communications system connecting compatible navigation equipment and surface assets to share operational information.",
+        "specs": [
+          [
+            "System",
+            "Underwater communications"
+          ],
+          [
+            "Users",
+            "Compatible divers and surface assets"
+          ],
+          [
+            "Shared data",
+            "Positions, targets and waypoints"
+          ],
+          [
+            "Use",
+            "Team coordination"
+          ]
+        ],
+        "features": [
+          "Connects compatible Navigator systems and surface assets",
+          "Shares positions, targets and waypoints",
+          "Supports diver tracking and communications"
+        ],
+        "source": "https://www.sharkmarine.com/accessories"
+      },
+      {
+        "id": "divelog",
+        "name": "DiveLog",
+        "type": "Mission planning and navigation software",
+        "image": "shark-marine-divelog.png",
+        "photo": false,
+        "summary": "Software for mission planning, navigation, sensor operation and review across compatible Shark Marine equipment.",
+        "specs": [
+          [
+            "System",
+            "Mission software"
+          ],
+          [
+            "Applications",
+            "Planning, navigation and reporting"
+          ],
+          [
+            "Map formats",
+            "Shapefile, DXF and KML"
+          ],
+          [
+            "Platforms",
+            "Compatible Shark Marine systems"
+          ]
+        ],
+        "features": [
+          "Plan routes and survey grids",
+          "Record targets and associated media",
+          "Replay project data and produce reports"
+        ],
+        "source": "https://www.sharkmarine.com/divelog"
+      }
+    ],
     "fxc": [
       {
         "id": "mc4",
@@ -809,16 +1103,17 @@
       "url": "diving-equipments.html",
       "companies": [
         "jfd",
-        "seacraft"
+        "seacraft",
+        "shark-marine"
       ],
-      "summary": "Explore JFD diving rebreathers and life-support systems, alongside Seacraft diver propulsion vehicles and underwater navigation.",
+      "summary": "Explore JFD life-support systems, Seacraft diver propulsion vehicles and Shark Marine underwater navigation equipment.",
       "image": "seacraft-future.png",
       "tags": [
         "Rebreathers",
         "DPVs",
         "Navigation"
       ],
-      "product_count": 11
+      "product_count": 20
     },
     {
       "id": "parachute",
@@ -867,6 +1162,13 @@
       "url": "seacraft.html",
       "logo": "seacraft-logo.png",
       "summary": "Diver propulsion vehicles and underwater navigation.",
+      "category": "diving"
+    },
+    "shark-marine": {
+      "name": "Shark Marine",
+      "url": "shark-marine.html",
+      "logo": "shark-marine-logo.png",
+      "summary": "Underwater navigation systems, sonar imaging and diver communications.",
       "category": "diving"
     },
     "fxc": {

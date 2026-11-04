@@ -103,7 +103,7 @@ test('public pages and assets work while private paths stay hidden', async () =>
       const response = await request(app).get(target);
       assert.notEqual(response.status, 200, `${mode}: ${target}`);
     }
-    for (const target of ['/', '/index.html', '/contact.html', '/privacy.html', '/products.html', '/assets/css/styles.css', '/assets/js/site.js', '/assets/js/chat-content.js', '/assets/img/sssb-logo.png', '/assets/img/haji-avatar2.png']) {
+    for (const target of ['/', '/index.html', '/contact.html', '/privacy.html', '/products.html', '/shark-marine.html', '/assets/css/styles.css', '/assets/js/site.js', '/assets/js/chat-content.js', '/assets/img/sssb-logo.png', '/assets/img/haji-avatar2.png']) {
       assert.equal((await request(app).get(target)).status, 200, `${mode}: ${target}`);
     }
   }
