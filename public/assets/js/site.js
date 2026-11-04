@@ -338,7 +338,10 @@
     ].join("");
     widget.innerHTML = [
       '<button class="chat-launcher" type="button" aria-expanded="false" aria-controls="sssb-chat-panel">',
-      '  <svg class="od-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+      '  <span class="chat-launcher-avatar" aria-hidden="true">',
+      '    <img src="/assets/img/haji-avatar2.png" alt="" width="38" height="38">',
+      '    <span class="chat-launcher-badge"><svg class="od-icon" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>',
+      '  </span>',
       '  <span>Ask Haji</span>',
       '</button>',
       '<section class="chat-panel" id="sssb-chat-panel" role="region" aria-labelledby="sssb-chat-title" hidden>',
