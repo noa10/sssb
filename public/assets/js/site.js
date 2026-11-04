@@ -595,6 +595,8 @@
     var pendingDraft = null;
     var activeContextApplied = false;
     var draftContextApplied = false;
+    var activeContextPending = false;
+    var draftContextPending = false;
     var restoreAfterPendingLoad = false;
     var seenAssistantIds = Object.create(null);
     var animateIncoming = false;
@@ -606,7 +608,10 @@
     var restoreLatestOnLoad = false;
     var chatOpenStorageKey = "sssb-chat-open";
     var pendingProductEnquiry = null;
-    var enquiryProductKey = null;
+    var activeEnquiryProductKey = null;
+    var draftEnquiryProductKey = null;
+    // A contact-page link must not be reused for a different signed-in account.
+    var contactContextAllowed = true;
     var returnToQuotation = false;
     var quotationRequestId = null;
     var quotationPayloadSignature = "";
@@ -656,21 +661,37 @@
         });
       });
       catalogue = published;
-      if ((draftChat ? draftContextApplied : activeContextApplied) && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
-        var enquiry = catalogueEnquiry();
-        if (enquiry) messageInput.value = enquiry;
-      }
+      applyPendingCatalogueContext();
     });
 
-    function catalogueEnquiry() {
-      if (document.body.dataset.page !== "contact") return "";
+    function catalogueContextKey() {
+      if (!contactContextAllowed || document.body.dataset.page !== "contact") return "";
       var params = new URLSearchParams(window.location.search);
       var company = params.get("company") || "";
       var product = params.get("product") || "";
-      var key = company + (product ? "/" + product : "");
+      return company + (product ? "/" + product : "");
+    }
+
+    function catalogueEnquiry() {
+      var key = catalogueContextKey();
       return Object.prototype.hasOwnProperty.call(catalogue, key)
         ? "I would like to enquire about " + catalogue[key] + "."
         : "";
+    }
+
+    function setCurrentEnquiryProduct(key) {
+      if (draftChat) draftEnquiryProductKey = key || null;
+      else activeEnquiryProductKey = key || null;
+    }
+
+    function applyPendingCatalogueContext() {
+      if (!(draftChat ? draftContextPending : activeContextPending) || messageInput.value) return;
+      var enquiry = catalogueEnquiry();
+      if (!enquiry) return;
+      messageInput.value = enquiry;
+      setCurrentEnquiryProduct(catalogueContextKey());
+      if (draftChat) draftContextPending = false;
+      else activeContextPending = false;
     }
 
     function setQuotationStatus(text, isError) {
@@ -796,15 +817,14 @@
 
     function prefillQuotationProduct() {
       if (quotationProduct.value) return;
-      if (enquiryProductKey && Object.prototype.hasOwnProperty.call(quotationCatalogue, enquiryProductKey)) {
-        quotationProduct.value = enquiryProductKey;
-      }
-      if (!quotationProduct.value && document.body.dataset.page === "contact") {
-        var params = new URLSearchParams(window.location.search);
-        var company = params.get("company") || "";
-        var product = params.get("product") || "";
-        var key = company + (product ? "/" + product : "");
-        if (Object.prototype.hasOwnProperty.call(quotationCatalogue, key)) quotationProduct.value = key;
+      if (activeEnquiryProductKey) {
+        if (Object.prototype.hasOwnProperty.call(quotationCatalogue, activeEnquiryProductKey)) {
+          quotationProduct.value = activeEnquiryProductKey;
+        } else {
+          setQuotationCatalogueStatus("The product from your enquiry is no longer available. Choose another product or Other / not sure.", false);
+        }
+        syncQuotationFields();
+        return;
       }
       if (!quotationProduct.value) {
         for (var index = currentMessages.length - 1; index >= 0 && !quotationProduct.value; index -= 1) {
@@ -1110,6 +1130,7 @@
         currentMessages = activeMessages;
         messageSignature = "";
         renderMessages();
+        applyPendingCatalogueContext();
       }
       showConversation(focusInput);
       scrollMessageHistory();
@@ -1161,13 +1182,13 @@
       var enquiry = pendingProductEnquiry;
       pendingProductEnquiry = null;
       restoreLatestOnLoad = false;
-      enquiryProductKey = enquiry.key;
-      if (Object.prototype.hasOwnProperty.call(quotationCatalogue, enquiry.key)) quotationProduct.value = enquiry.key;
       quotationOpen = false;
       returnToQuotation = false;
       if (draftChat) showConversation();
       else if (active === true) showSavedConversation();
       else askFromHistory();
+      setCurrentEnquiryProduct(enquiry.key);
+      if (!draftChat) quotationProduct.value = "";
       if (!messageInput.value.trim()) messageInput.value = enquiry.message;
       else if (messageInput.value.indexOf(enquiry.message) === -1) messageInput.value += "\n\n" + enquiry.message;
       schedulePendingRefresh();
@@ -1304,11 +1325,17 @@
     }
 
     function applyCatalogueContext() {
-      if (draftChat ? draftContextApplied : activeContextApplied) return;
+      if (draftChat ? draftContextApplied : activeContextApplied) {
+        applyPendingCatalogueContext();
+        return;
+      }
       if (draftChat) draftContextApplied = true;
       else activeContextApplied = true;
-      var enquiry = catalogueEnquiry();
-      if (enquiry && !messageInput.value) messageInput.value = enquiry;
+      if (catalogueContextKey() && !messageInput.value) {
+        if (draftChat) draftContextPending = true;
+        else activeContextPending = true;
+        applyPendingCatalogueContext();
+      }
     }
 
     function prefersReducedMotion() {
@@ -1604,7 +1631,14 @@
         }
         var previousCustomer = customer;
         customer = data.customer || null;
-        if (previousCustomer && (!customer || previousCustomer.email !== customer.email)) resetQuotation();
+        if (previousCustomer && (!customer || previousCustomer.email !== customer.email)) {
+          resetQuotation();
+          activeEnquiryProductKey = null;
+          draftEnquiryProductKey = null;
+          activeContextPending = false;
+          draftContextPending = false;
+          contactContextAllowed = false;
+        }
         guestConversation = data.guestConversation || null;
         if (customer) {
           accountMode = null;
@@ -1626,6 +1660,10 @@
           }));
         if (nextConversationId !== conversationId) {
           resetQuotation();
+          // Only a confirmed first message transfers the draft's product to the new chat.
+          activeEnquiryProductKey = savedFirstMessage ? draftEnquiryProductKey : null;
+          activeContextPending = false;
+          if (conversationId !== null && !savedFirstMessage) activeContextApplied = true;
           messageSignature = "";
           cancelReveal();
           seenAssistantIds = Object.create(null);
@@ -1635,13 +1673,16 @@
           activeMessageValue = "";
           if (conversationId !== null && !draftChat && !pendingDraft) {
             messageInput.value = "";
-            activeContextApplied = false;
           }
           conversationId = nextConversationId;
         }
         active = data.active;
         activeMessages = active ? data.messages : [];
-        if (savedFirstMessage) draftChat = false;
+        if (savedFirstMessage) {
+          draftChat = false;
+          draftEnquiryProductKey = null;
+          draftContextPending = false;
+        }
         if (!draftChat) currentMessages = activeMessages;
         stale = false;
         updateControls();
@@ -2078,8 +2119,12 @@
       messageSignature = "";
       messageInput.value = "";
       pendingDraft = null;
+      activeEnquiryProductKey = null;
+      draftEnquiryProductKey = null;
       activeContextApplied = false;
       draftContextApplied = false;
+      activeContextPending = false;
+      draftContextPending = false;
     }
 
     function setAccountMode(mode) {
@@ -2206,10 +2251,12 @@
       accountPassword.value = "";
       accountConfirm.value = "";
       var unsentDraft = draftChat ? messageInput.value : null;
+      var unsentEnquiryProduct = !customer && draftChat ? draftEnquiryProductKey : null;
       clearChatView();
       if (unsentDraft !== null) {
         draftChat = true;
         messageInput.value = unsentDraft;
+        draftEnquiryProductKey = unsentEnquiryProduct;
       }
       var loaded = await loadCurrent();
       if (loaded && customer) {
@@ -2234,6 +2281,7 @@
       busy = true;
       stopPolling();
       startRequested = false;
+      contactContextAllowed = false;
       clearChatView();
       profileMode = false;
       updateControls();
@@ -2403,6 +2451,11 @@
         if (isOpen && sent && !messageInput.disabled) messageInput.focus();
         else if (isOpen && profileMode && !profileName.disabled) profileName.focus();
       }
+    });
+
+    messageInput.addEventListener("input", function () {
+      if (draftChat) draftContextPending = false;
+      else activeContextPending = false;
     });
 
     messageInput.addEventListener("keydown", function (event) {
