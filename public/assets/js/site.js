@@ -595,6 +595,8 @@
     var pendingDraft = null;
     var activeContextApplied = false;
     var draftContextApplied = false;
+    var activeContextPending = false;
+    var draftContextPending = false;
     var restoreAfterPendingLoad = false;
     var seenAssistantIds = Object.create(null);
     var animateIncoming = false;
@@ -603,6 +605,13 @@
     var historyOpen = false;
     var helpOpen = false;
     var historySequence = 0;
+    var restoreLatestOnLoad = false;
+    var chatOpenStorageKey = "sssb-chat-open";
+    var pendingProductEnquiry = null;
+    var activeEnquiryProductKey = null;
+    var draftEnquiryProductKey = null;
+    // A contact-page link must not be reused for a different signed-in account.
+    var contactContextAllowed = true;
     var returnToQuotation = false;
     var quotationRequestId = null;
     var quotationPayloadSignature = "";
@@ -652,21 +661,37 @@
         });
       });
       catalogue = published;
-      if ((draftChat ? draftContextApplied : activeContextApplied) && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
-        var enquiry = catalogueEnquiry();
-        if (enquiry) messageInput.value = enquiry;
-      }
+      applyPendingCatalogueContext();
     });
 
-    function catalogueEnquiry() {
-      if (document.body.dataset.page !== "contact") return "";
+    function catalogueContextKey() {
+      if (!contactContextAllowed || document.body.dataset.page !== "contact") return "";
       var params = new URLSearchParams(window.location.search);
       var company = params.get("company") || "";
       var product = params.get("product") || "";
-      var key = company + (product ? "/" + product : "");
+      return company + (product ? "/" + product : "");
+    }
+
+    function catalogueEnquiry() {
+      var key = catalogueContextKey();
       return Object.prototype.hasOwnProperty.call(catalogue, key)
         ? "I would like to enquire about " + catalogue[key] + "."
         : "";
+    }
+
+    function setCurrentEnquiryProduct(key) {
+      if (draftChat) draftEnquiryProductKey = key || null;
+      else activeEnquiryProductKey = key || null;
+    }
+
+    function applyPendingCatalogueContext() {
+      if (!(draftChat ? draftContextPending : activeContextPending) || messageInput.value) return;
+      var enquiry = catalogueEnquiry();
+      if (!enquiry) return;
+      messageInput.value = enquiry;
+      setCurrentEnquiryProduct(catalogueContextKey());
+      if (draftChat) draftContextPending = false;
+      else activeContextPending = false;
     }
 
     function setQuotationStatus(text, isError) {
@@ -792,12 +817,14 @@
 
     function prefillQuotationProduct() {
       if (quotationProduct.value) return;
-      if (document.body.dataset.page === "contact") {
-        var params = new URLSearchParams(window.location.search);
-        var company = params.get("company") || "";
-        var product = params.get("product") || "";
-        var key = company + (product ? "/" + product : "");
-        if (Object.prototype.hasOwnProperty.call(quotationCatalogue, key)) quotationProduct.value = key;
+      if (activeEnquiryProductKey) {
+        if (Object.prototype.hasOwnProperty.call(quotationCatalogue, activeEnquiryProductKey)) {
+          quotationProduct.value = activeEnquiryProductKey;
+        } else {
+          setQuotationCatalogueStatus("The product from your enquiry is no longer available. Choose another product or Other / not sure.", false);
+        }
+        syncQuotationFields();
+        return;
       }
       if (!quotationProduct.value) {
         for (var index = currentMessages.length - 1; index >= 0 && !quotationProduct.value; index -= 1) {
@@ -927,6 +954,8 @@
           button.appendChild(dot);
         }
         button.addEventListener("click", function () {
+          restoreLatestOnLoad = false;
+          pendingProductEnquiry = null;
           if (item.active && active === true && String(item.id) === conversationId) showSavedConversation();
           else openArchivedChat(item.id);
         });
@@ -948,8 +977,19 @@
         if (!data || !Array.isArray(data.conversations)) throw new Error("Unexpected chats response");
         renderArchiveList(data.conversations);
         setArchiveStatus("", false);
+        if (restoreLatestOnLoad && isOpen) {
+          restoreLatestOnLoad = false;
+          var latest = data.conversations.find(function (item) {
+            return item && typeof item.id === "string" && !item.messagesExpired && item.lastMessage;
+          });
+          if (latest) {
+            if (latest.active && active === true && String(latest.id) === conversationId) showSavedConversation(false);
+            else openArchivedChat(latest.id, false);
+          }
+        }
       } catch (error) {
         if (sequence !== historySequence || !historyOpen) return;
+        restoreLatestOnLoad = false;
         setArchiveStatus("We could not load your messages. Please try again.", true);
       }
     }
@@ -978,7 +1018,7 @@
       archiveMessages.replaceChildren(fragment);
     }
 
-    async function openArchivedChat(id) {
+    async function openArchivedChat(id, focusBack) {
       var sequence = ++historySequence;
       archiveListView.hidden = true;
       archiveTranscript.hidden = false;
@@ -995,7 +1035,8 @@
         renderArchivedMessages(data.messages);
         archiveExpired.hidden = !data.messagesExpired;
         setArchiveStatus("", false);
-        archiveBack.focus();
+        if (focusBack === false) archiveTranscript.scrollTop = archiveTranscript.scrollHeight;
+        else archiveBack.focus();
       } catch (error) {
         if (sequence !== historySequence || !historyOpen) return;
         setArchiveStatus(error.status === 404 ? "This chat is no longer available." : "We could not load this chat. Please try again.", true);
@@ -1004,6 +1045,8 @@
 
     function openHistory() {
       if (busy || loading || hasPendingMessage()) return;
+      restoreLatestOnLoad = false;
+      pendingProductEnquiry = null;
       historyOpen = true;
       helpOpen = false;
       accountOpen = false;
@@ -1024,6 +1067,8 @@
 
     function openHelp() {
       if (busy || loading || hasPendingMessage()) return;
+      restoreLatestOnLoad = false;
+      pendingProductEnquiry = null;
       historyOpen = false;
       helpOpen = true;
       accountOpen = false;
@@ -1041,6 +1086,8 @@
 
     function openAccount() {
       if (busy || loading || hasPendingMessage()) return;
+      restoreLatestOnLoad = false;
+      pendingProductEnquiry = null;
       historyOpen = false;
       helpOpen = false;
       accountOpen = true;
@@ -1062,7 +1109,7 @@
       renderMessages();
     }
 
-    function showConversation() {
+    function showConversation(focusInput) {
       historyOpen = false;
       helpOpen = false;
       accountOpen = false;
@@ -1072,10 +1119,10 @@
       historySequence += 1;
       setStatus("", false);
       updateControls();
-      if (isOpen && !messageInput.disabled) messageInput.focus();
+      if (isOpen && focusInput !== false && !messageInput.disabled) messageInput.focus();
     }
 
-    function showSavedConversation() {
+    function showSavedConversation(focusInput) {
       if (draftChat) {
         draftMessageValue = messageInput.value;
         messageInput.value = activeMessageValue;
@@ -1083,8 +1130,10 @@
         currentMessages = activeMessages;
         messageSignature = "";
         renderMessages();
+        applyPendingCatalogueContext();
       }
-      showConversation();
+      showConversation(focusInput);
+      scrollMessageHistory();
     }
 
     function continueRequestedChat() {
@@ -1115,6 +1164,8 @@
 
     function askFromHistory() {
       if (busy || loading || stale || hasPendingMessage()) return;
+      restoreLatestOnLoad = false;
+      pendingProductEnquiry = null;
       if (!draftChat) {
         activeMessageValue = active === true ? messageInput.value : "";
         messageInput.value = draftMessageValue;
@@ -1124,6 +1175,23 @@
       showDraftWelcome();
       applyCatalogueContext();
       showConversation();
+    }
+
+    function openPendingProductEnquiry() {
+      if (!pendingProductEnquiry || !isOpen || busy || loading || stale) return;
+      var enquiry = pendingProductEnquiry;
+      pendingProductEnquiry = null;
+      restoreLatestOnLoad = false;
+      quotationOpen = false;
+      returnToQuotation = false;
+      if (draftChat) showConversation();
+      else if (active === true) showSavedConversation();
+      else askFromHistory();
+      setCurrentEnquiryProduct(enquiry.key);
+      if (!draftChat) quotationProduct.value = "";
+      if (!messageInput.value.trim()) messageInput.value = enquiry.message;
+      else if (messageInput.value.indexOf(enquiry.message) === -1) messageInput.value += "\n\n" + enquiry.message;
+      schedulePendingRefresh();
     }
 
     function openQuotation() {
@@ -1160,6 +1228,22 @@
       return currentMessages.some(function (message) {
         return message.status === "pending";
       });
+    }
+
+    function savedChatOpen() {
+      try {
+        return window.sessionStorage.getItem(chatOpenStorageKey) === "1";
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function saveChatOpen(open) {
+      try {
+        window.sessionStorage.setItem(chatOpenStorageKey, open ? "1" : "0");
+      } catch (error) {
+        // Chat remains usable when browser storage is unavailable.
+      }
     }
 
     function hasSavedDetails(account) {
@@ -1241,11 +1325,17 @@
     }
 
     function applyCatalogueContext() {
-      if (draftChat ? draftContextApplied : activeContextApplied) return;
+      if (draftChat ? draftContextApplied : activeContextApplied) {
+        applyPendingCatalogueContext();
+        return;
+      }
       if (draftChat) draftContextApplied = true;
       else activeContextApplied = true;
-      var enquiry = catalogueEnquiry();
-      if (enquiry && !messageInput.value) messageInput.value = enquiry;
+      if (catalogueContextKey() && !messageInput.value) {
+        if (draftChat) draftContextPending = true;
+        else activeContextPending = true;
+        applyPendingCatalogueContext();
+      }
     }
 
     function prefersReducedMotion() {
@@ -1541,7 +1631,14 @@
         }
         var previousCustomer = customer;
         customer = data.customer || null;
-        if (previousCustomer && (!customer || previousCustomer.email !== customer.email)) resetQuotation();
+        if (previousCustomer && (!customer || previousCustomer.email !== customer.email)) {
+          resetQuotation();
+          activeEnquiryProductKey = null;
+          draftEnquiryProductKey = null;
+          activeContextPending = false;
+          draftContextPending = false;
+          contactContextAllowed = false;
+        }
         guestConversation = data.guestConversation || null;
         if (customer) {
           accountMode = null;
@@ -1563,6 +1660,10 @@
           }));
         if (nextConversationId !== conversationId) {
           resetQuotation();
+          // Only a confirmed first message transfers the draft's product to the new chat.
+          activeEnquiryProductKey = savedFirstMessage ? draftEnquiryProductKey : null;
+          activeContextPending = false;
+          if (conversationId !== null && !savedFirstMessage) activeContextApplied = true;
           messageSignature = "";
           cancelReveal();
           seenAssistantIds = Object.create(null);
@@ -1572,13 +1673,16 @@
           activeMessageValue = "";
           if (conversationId !== null && !draftChat && !pendingDraft) {
             messageInput.value = "";
-            activeContextApplied = false;
           }
           conversationId = nextConversationId;
         }
         active = data.active;
         activeMessages = active ? data.messages : [];
-        if (savedFirstMessage) draftChat = false;
+        if (savedFirstMessage) {
+          draftChat = false;
+          draftEnquiryProductKey = null;
+          draftContextPending = false;
+        }
         if (!draftChat) currentMessages = activeMessages;
         stale = false;
         updateControls();
@@ -1642,9 +1746,16 @@
         return message && message.status === "pending";
       }).map(function (message) { return String(message.id); });
       return loadCurrent().then(function (loaded) {
+        if (loading) return;
         if (!loaded) {
           if (historyOpen) setArchiveStatus("", false);
           return;
+        }
+        openPendingProductEnquiry();
+        if (restoreLatestOnLoad && isOpen && historyOpen && active && customer) {
+          restoreLatestOnLoad = false;
+          showSavedConversation(false);
+          schedulePendingRefresh();
         }
         var failedPending = currentMessages.some(function (message) {
           return message && message.status === "failed" && previousPending.indexOf(String(message.id)) !== -1;
@@ -1659,6 +1770,7 @@
         if (isOpen && historyOpen && !busy && !archiveListView.hidden) {
           if (customer) loadHistory();
           else {
+            restoreLatestOnLoad = false;
             renderArchiveList([]);
             setArchiveStatus("", false);
           }
@@ -1763,31 +1875,39 @@
       if (enabled && !panel.contains(document.activeElement)) focusFullscreenButton();
     }
 
-    function openPanel(trigger) {
-      if (isOpen) return;
-      var mobilePanel = document.querySelector("[data-mobile-menu]");
-      if (mobilePanel && mobilePanel.dataset.open === "true") return;
-      isOpen = true;
+    function openPanel(trigger, restoreLatest) {
+      if (isOpen && !restoreLatest) return;
+      if (!isOpen) {
+        var mobilePanel = document.querySelector("[data-mobile-menu]");
+        if (mobilePanel && mobilePanel.dataset.open === "true") return;
+        isOpen = true;
+        lastFocused = trigger || document.activeElement;
+        panel.hidden = false;
+        launcher.setAttribute("aria-expanded", "true");
+        saveChatOpen(true);
+      }
+      restoreLatestOnLoad = restoreLatest === true;
       historyOpen = true;
       helpOpen = false;
       accountOpen = false;
+      accountMode = null;
+      profileMode = false;
       startRequested = false;
+      historySequence += 1;
       showArchiveList();
+      archiveList.replaceChildren();
       archiveEmpty.hidden = true;
       archiveList.hidden = false;
       setArchiveStatus("Loading your messages…", false);
       stopPolling();
-      lastFocused = trigger || document.activeElement;
-      panel.hidden = false;
-      launcher.setAttribute("aria-expanded", "true");
       updateControls();
       layoutPanel();
-      archiveTitle.focus();
+      if (!restoreLatest) archiveTitle.focus();
       updateContactConfig();
       if (busy || loading) {
         restoreAfterPendingLoad = true;
       } else {
-        refreshCurrent();
+        refreshCurrent(restoreLatest);
       }
     }
 
@@ -1798,15 +1918,19 @@
         restoreAfterPendingLoad = false;
         refreshCurrent();
       } else {
+        openPendingProductEnquiry();
         schedulePendingRefresh();
       }
     }
 
-    function closePanel() {
+    function closePanel(restoreFocus) {
       if (!isOpen) return;
       stopResize();
       if (isFullscreen) setFullscreen(false);
       isOpen = false;
+      saveChatOpen(false);
+      restoreLatestOnLoad = false;
+      pendingProductEnquiry = null;
       historyOpen = false;
       helpOpen = false;
       accountOpen = false;
@@ -1822,6 +1946,7 @@
       panel.hidden = true;
       launcher.setAttribute("aria-expanded", "false");
       updateControls();
+      if (restoreFocus === false) return;
       if (lastFocused && typeof lastFocused.focus === "function" && lastFocused.offsetParent !== null) {
         lastFocused.focus();
       } else {
@@ -1927,6 +2052,37 @@
       button.addEventListener("click", function () { openPanel(button); });
     });
 
+    document.addEventListener("click", function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+          !event.target || typeof event.target.closest !== "function") return;
+      var link = event.target.closest(".product-detail-actions a[href]");
+      if (!link || link.hasAttribute("download") || (link.target && link.target.toLowerCase() !== "_self")) return;
+      var destination = new URL(link.href, window.location.href);
+      var contact = new URL("contact.html", window.location.href);
+      var company = destination.searchParams.get("company") || "";
+      var product = destination.searchParams.get("product") || "";
+      if (destination.origin !== window.location.origin || destination.pathname !== contact.pathname || !company || !product) return;
+      var key = company + "/" + product;
+      var label = Object.prototype.hasOwnProperty.call(catalogue, key) ? catalogue[key] : "";
+      if (!label) {
+        var accessibleLabel = link.getAttribute("aria-label") || "";
+        var match = /^Enquire about\s+(.+)$/i.exec(accessibleLabel);
+        label = match ? match[1].trim() : "";
+      }
+      if (!label) return;
+      pendingProductEnquiry = { key: key, message: "I would like to enquire about " + label + "." };
+      if (!isOpen) openPanel(link);
+      if (!isOpen) {
+        pendingProductEnquiry = null;
+        return;
+      }
+      event.preventDefault();
+      if (stale && !busy && !loading) refreshCurrent(false);
+      else openPendingProductEnquiry();
+    });
+
+    if (savedChatOpen() === true) openPanel(null, true);
+
     if (document.body.dataset.page === "contact") {
       document.querySelectorAll('a[href*="#enquiry"]').forEach(function (link) {
         var destination = new URL(link.href, window.location.href);
@@ -1963,8 +2119,12 @@
       messageSignature = "";
       messageInput.value = "";
       pendingDraft = null;
+      activeEnquiryProductKey = null;
+      draftEnquiryProductKey = null;
       activeContextApplied = false;
       draftContextApplied = false;
+      activeContextPending = false;
+      draftContextPending = false;
     }
 
     function setAccountMode(mode) {
@@ -2044,7 +2204,11 @@
       }
     });
     window.addEventListener("pageshow", function (event) {
-      if (event.persisted && isOpen && !busy && !loading) refreshCurrent(true);
+      if (!event.persisted) return;
+      var savedOpen = savedChatOpen();
+      if (savedOpen === true) openPanel(null, true);
+      else if (savedOpen === false && isOpen) closePanel(false);
+      else if (savedOpen === null && isOpen && !busy && !loading) refreshCurrent(true);
     });
     accountForm.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -2087,10 +2251,12 @@
       accountPassword.value = "";
       accountConfirm.value = "";
       var unsentDraft = draftChat ? messageInput.value : null;
+      var unsentEnquiryProduct = !customer && draftChat ? draftEnquiryProductKey : null;
       clearChatView();
       if (unsentDraft !== null) {
         draftChat = true;
         messageInput.value = unsentDraft;
+        draftEnquiryProductKey = unsentEnquiryProduct;
       }
       var loaded = await loadCurrent();
       if (loaded && customer) {
@@ -2115,6 +2281,7 @@
       busy = true;
       stopPolling();
       startRequested = false;
+      contactContextAllowed = false;
       clearChatView();
       profileMode = false;
       updateControls();
@@ -2284,6 +2451,11 @@
         if (isOpen && sent && !messageInput.disabled) messageInput.focus();
         else if (isOpen && profileMode && !profileName.disabled) profileName.focus();
       }
+    });
+
+    messageInput.addEventListener("input", function () {
+      if (draftChat) draftContextPending = false;
+      else activeContextPending = false;
     });
 
     messageInput.addEventListener("keydown", function (event) {
