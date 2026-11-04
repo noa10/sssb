@@ -2,6 +2,7 @@
 
 // Publishes approved company information from the public website pages.
 // Run without --apply to preview; existing entries with the same title are left unchanged.
+// For the staff-reviewed update to existing quotation wording, see DEPLOYMENT.md.
 const { createPool, databaseConfig } = require('../server/db');
 const { indexChunks } = require('../server/knowledge');
 

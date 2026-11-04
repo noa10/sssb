@@ -831,6 +831,27 @@ test('company enquiries use published company knowledge', async () => {
   assert.equal(pool.data.messages.at(-1).content, 'Our head office is in Johor Bahru.');
 });
 
+test('staff can update existing company knowledge while retaining edits and rebuilding its search chunks', async () => {
+  const password = 'A long test password!';
+  const pool = fakeDatabase(await argon2.hash(password));
+  const app = createApp({ pool, provider: { async answer() { return 'unused'; } }, env: { NODE_ENV: 'test' } });
+  const staff = request.agent(app);
+  const title = 'Semenanjung Selatan (SSSB) offices and contact';
+  const original = 'For quotations and availability, contact the SSSB team directly.\n\nStaff-added office note.';
+  pool.data.knowledge.push({ id: '1', title, kind: 'company', content: original, source_name: 'SSSB website company pages', status: 'published' });
+  pool.data.chunks.push({ knowledge_id: '1', content: original });
+  assert.equal((await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password })).status, 200);
+
+  const updated = original.replace('For quotations and availability, contact the SSSB team directly.',
+    'To request a quotation, visitors can submit a request through the website chat or contact the SSSB team directly.');
+  assert.equal((await mutate(staff, 'patch', '/api/admin/knowledge/1', { content: updated })).status, 200);
+  assert.equal(pool.data.knowledge[0].content, updated);
+  assert.equal(pool.data.knowledge[0].status, 'published');
+  assert.match(pool.data.chunks[0].content, /request through the website chat/);
+  assert.match(pool.data.chunks[0].content, /Staff-added office note/);
+  assert.doesNotMatch(pool.data.chunks[0].content, /For quotations and availability/);
+});
+
 test('a database connection failure removes the extracted private PDF', async () => {
   const uploadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sssb-upload-test-'));
   const secret = crypto.randomBytes(32).toString('base64url');

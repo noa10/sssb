@@ -590,7 +590,8 @@
     var loadSequence = 0;
     var configSequence = 0;
     var pendingDraft = null;
-    var contextApplied = false;
+    var activeContextApplied = false;
+    var draftContextApplied = false;
     var restoreAfterPendingLoad = false;
     var seenAssistantIds = Object.create(null);
     var animateIncoming = false;
@@ -648,7 +649,7 @@
         });
       });
       catalogue = published;
-      if (contextApplied && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
+      if ((draftChat ? draftContextApplied : activeContextApplied) && document.body.dataset.page === "contact" && messageInput && !messageInput.value) {
         var enquiry = catalogueEnquiry();
         if (enquiry) messageInput.value = enquiry;
       }
@@ -1237,8 +1238,9 @@
     }
 
     function applyCatalogueContext() {
-      if (contextApplied) return;
-      contextApplied = true;
+      if (draftChat ? draftContextApplied : activeContextApplied) return;
+      if (draftChat) draftContextApplied = true;
+      else activeContextApplied = true;
       var enquiry = catalogueEnquiry();
       if (enquiry && !messageInput.value) messageInput.value = enquiry;
     }
@@ -1567,7 +1569,7 @@
           activeMessageValue = "";
           if (conversationId !== null && !draftChat && !pendingDraft) {
             messageInput.value = "";
-            contextApplied = false;
+            activeContextApplied = false;
           }
           conversationId = nextConversationId;
         }
@@ -1958,7 +1960,8 @@
       messageSignature = "";
       messageInput.value = "";
       pendingDraft = null;
-      contextApplied = false;
+      activeContextApplied = false;
+      draftContextApplied = false;
     }
 
     function setAccountMode(mode) {
@@ -2350,7 +2353,7 @@
         result = null;
       }
       var loaded = await loadCurrent();
-      if (savedFailure && messageInput.value === value) {
+      if (loaded && savedFailure && messageInput.value === value) {
         messageInput.value = "";
         pendingDraft = null;
         if (firstMessage) draftMessageValue = "";

@@ -4019,7 +4019,7 @@ body.menu-open .mobile-scrim {
   min-height: 38px;
   max-height: 140px;
   padding: 9px 0;
-  resize: none;
+  resize: vertical;
   border: 0;
   border-radius: 0;
   background: transparent;
