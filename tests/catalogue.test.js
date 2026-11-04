@@ -90,16 +90,19 @@ function fakePool() {
 
 test('catalogue conversion preserves product details and source attribution', () => {
   const entries = buildCatalogue(catalogue);
-  assert.equal(entries.filter((entry) => entry.kind === 'product').length, 20);
+  assert.equal(entries.filter((entry) => entry.kind === 'product').length, 23);
   assert.equal(entries.filter((entry) => entry.kind === 'company').length, 5);
-  assert.equal(new Set(entries.map((entry) => entry.key)).size, 25);
+  assert.equal(new Set(entries.map((entry) => entry.key)).size, 28);
   const model = entries.find((entry) => entry.key === 'product:seacraft/future-1000');
   assert.match(model.content, /15\.9 kg/);
   assert.match(model.content, /Specification note:/);
   assert.match(model.content, /Manufacturer source: https:\/\//);
   assert.match(model.content, /\/seacraft\.html#future-1000/);
-  assert.match(model.content, /2026-11-01/);
+  assert.match(model.content, /2026-11-04/);
   assert.match(entries.find((entry) => entry.key === 'product:fxc/model-12000').content, /12000-25/);
+  const tc1000 = entries.find((entry) => entry.key === 'product:jfd/tc1000-transport-chamber');
+  assert.match(tc1000.content, /JFD Cowan two-person transport chamber/);
+  assert.match(tc1000.content, /60 MSW/);
 });
 
 test('catalogue conversion rejects malformed or duplicate product IDs', () => {

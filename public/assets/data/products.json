@@ -1,5 +1,5 @@
 {
-  "verified_on": "2026-11-01",
+  "verified_on": "2026-11-04",
   "companies": {
     "jfd": [
       {
@@ -129,6 +129,162 @@
           "Established through-life support options"
         ],
         "source": "https://www.james-fisher.com/divisions/defence/defence-diving/"
+      },
+      {
+        "id": "tc650-transport-chamber",
+        "name": "TC650 Transport Chamber",
+        "type": "JFD Cowan one-person transport chamber",
+        "image": "jfd-tc650.jpg",
+        "photo": true,
+        "summary": "An easily mobilised one-person chamber for on-site recompression treatment and for transporting a diver under pressure to a larger treatment chamber.",
+        "specs": [
+          [
+            "Manufacturer",
+            "JFD Cowan"
+          ],
+          [
+            "Chamber",
+            "One-person transport chamber"
+          ],
+          [
+            "Use",
+            "On-site recompression and transport under pressure"
+          ],
+          [
+            "Mobility",
+            "Easily mobilised"
+          ]
+        ],
+        "features": [
+          "On-site recompression treatment",
+          "Transport under pressure to a larger treatment chamber",
+          "Easily mobilised for detached diving operations"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/commercial-diving-and-hyperbaric-equipment/saturation-diving-equipment/"
+      },
+      {
+        "id": "tc1000-transport-chamber",
+        "name": "TC1000 Transport Chamber",
+        "type": "JFD Cowan two-person transport chamber",
+        "image": "jfd-tc1000.jpg",
+        "photo": true,
+        "summary": "A lightweight, fully transportable two-person chamber for on-site recompression treatment and transport of divers under pressure. Its duplex stainless-steel construction allows it to be hand-carried or moved by helicopter, light aircraft or pick-up.",
+        "specs": [
+          [
+            "Manufacturer",
+            "JFD Cowan"
+          ],
+          [
+            "Design code",
+            "ASME VIII Div. 1 / ASME PVHO-1"
+          ],
+          [
+            "Certification",
+            "Lloyd's Register"
+          ],
+          [
+            "Maximum depth rating",
+            "60 MSW"
+          ],
+          [
+            "Material",
+            "Duplex stainless steel"
+          ],
+          [
+            "Volume",
+            "1100 litres"
+          ],
+          [
+            "Inside diameter",
+            "665 mm min; 1000 mm max"
+          ],
+          [
+            "Overall length",
+            "690 mm"
+          ],
+          [
+            "Overall height",
+            "1135 mm"
+          ],
+          [
+            "Overall width",
+            "1210 mm"
+          ],
+          [
+            "Gross weight",
+            "220 kg without onboard air and oxygen supplies; 285 kg with"
+          ]
+        ],
+        "spec_note": "Manufacturer specifications. Confirm the current configuration and availability with SSSB.",
+        "features": [
+          "Two-person transport chamber",
+          "Hand-carried by ten to twelve people",
+          "Transportable by helicopter, fixed-wing aircraft or light pick-up",
+          "Optional non-magnetic TC1000-MCM version for mine countermeasure vessels"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/commercial-diving-and-hyperbaric-equipment/saturation-diving-equipment/"
+      },
+      {
+        "id": "tc1150-transport-chamber",
+        "name": "TC1150 Transport Chamber",
+        "type": "JFD Cowan one-person mobile transport chamber",
+        "image": "jfd-tc1150.jpg",
+        "photo": true,
+        "summary": "A transport chamber with an integral trolley and detachable tow-bar, allowing one person to move it for detached diving operations. It supports on-site recompression and transport under pressure to larger treatment chambers.",
+        "specs": [
+          [
+            "Manufacturer",
+            "JFD Cowan"
+          ],
+          [
+            "Design code",
+            "ASME VIII Div. 1 / ASME PVHO-1"
+          ],
+          [
+            "Certification",
+            "Lloyd's Register"
+          ],
+          [
+            "Maximum depth rating",
+            "60 MSW"
+          ],
+          [
+            "Material",
+            "Duplex stainless steel"
+          ],
+          [
+            "Volume",
+            "1500 litres"
+          ],
+          [
+            "Inside diameter",
+            "1150 mm"
+          ],
+          [
+            "Overall length",
+            "2750 mm"
+          ],
+          [
+            "Overall height",
+            "1600 mm"
+          ],
+          [
+            "Overall width",
+            "1560 mm"
+          ],
+          [
+            "Gross weight",
+            "410 kg without onboard air and oxygen supplies; 515 kg with"
+          ]
+        ],
+        "spec_note": "Manufacturer specifications. Confirm the current configuration and availability with SSSB.",
+        "features": [
+          "Integral trolley with detachable tow-bar",
+          "Manoeuvrable by one person",
+          "Transportable by helicopter, fixed-wing aircraft or light pick-up",
+          "Optional non-magnetic TC1150-MCM version for mine countermeasure vessels"
+        ],
+        "source": "https://www.james-fisher.com/divisions/defence/commercial-diving-and-hyperbaric-equipment/saturation-diving-equipment/"
       }
     ],
     "seacraft": [
@@ -662,7 +818,7 @@
         "DPVs",
         "Navigation"
       ],
-      "product_count": 8
+      "product_count": 11
     },
     {
       "id": "parachute",
