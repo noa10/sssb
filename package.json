@@ -27,6 +27,7 @@
     "sanitize-html": "^2.18.1"
   },
   "devDependencies": {
+    "jsdom": "^26.1.0",
     "supertest": "^7.3.1"
   }
 }

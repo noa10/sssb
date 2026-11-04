@@ -168,6 +168,14 @@ node scripts/seed-company-knowledge.js --apply
 
 Without `--apply` the command only previews the entries. It inserts each entry as published and skips any title that already exists, so it does not overwrite staff edits. Review the content and publication status in the dashboard afterwards. The entries deliberately exclude personal mobile numbers and direct staff email addresses; use the general office contact details. Re-running the command only adds missing titles.
 
+### Update quotation wording in an existing installation
+
+Existing entries are not updated by the seed. After deploying this version, a staff member should open **Knowledge**, search for **Semenanjung Selatan (SSSB) offices and contact**, and review its current content and publication status. In the **Enquiries** paragraph, incorporate the approved wording below while retaining any other staff edits:
+
+> Product enquiries, procurement requirements and after-sales support can be directed to the head office or the northern branch. To request a quotation, visitors can submit a request through the website chat or contact the SSSB team directly. The team confirms pricing, availability and delivery.
+
+Save the entry with the intended publication status. Saving through the Knowledge editor rebuilds its search chunks in the same transaction, so published content becomes searchable without rerunning the seed. If the title does not exist, use the seed command above instead. Verify the saved wording in the editor and test a quotation enquiry in chat; preserve any deliberate staff changes rather than replacing the whole record.
+
 The Knowledge editor can permanently delete non-product content, including its search chunks and, for a PDF, the stored file. Product-linked knowledge cannot be deleted there; delete the product in **Products** instead. The Enquiries detail panel can permanently delete an enquiry, which removes the conversation, transcript, quotation requests, contact details and the customer's link to it. Both actions ask for confirmation and cannot be undone.
 
 ## Local development

@@ -19,7 +19,7 @@ function fakeDatabase(passwordHash) {
   const execute = async (sql, params = []) => {
     const query = sql.replace(/\s+/g, ' ').trim();
     if (query.startsWith('INSERT INTO rate_limits') || query.startsWith('UPDATE rate_limits')) return [{ affectedRows: 1 }];
-    if (query.startsWith('SELECT hits, window_start')) return [[{ hits: data.rateLimitExceeded ? 10000 : 0, expired: 0 }]];
+    if (query.startsWith('SELECT hits, window_start')) return [[{ hits: data.rateLimitExceeded || (data.globalMessageLimitExceeded && params[1] === digest('message:global')) ? 10000 : 0, expired: 0 }]];
     if (query.startsWith('SELECT id,email,password_hash,disabled FROM staff_users')) return [[...(params[0] === staff.email ? [staff] : [])]];
     if (query.startsWith('INSERT INTO staff_sessions')) { data.sessions.push({ hash: params[0], staffId: params[1] }); return [{ affectedRows: 1 }]; }
     if (query.startsWith('SELECT s.staff_id, u.email FROM staff_sessions')) {
@@ -72,6 +72,22 @@ function fakeDatabase(passwordHash) {
       const owned = data.links.filter((link) => link.customer_id === params[0]).map((link) => link.conversation_id);
       return [data.conversations.filter((entry) => owned.includes(entry.id) && !entry.closed && new Date(entry.created_at).getTime() > Date.now() - 30 * 86400000).slice(-1)];
     }
+    if (query.startsWith('SELECT c.id,c.status,c.created_at,c.visitor_closed_at,')) {
+      const owned = data.links.filter((link) => link.customer_id === params[0]).map((link) => link.conversation_id);
+      let rows = data.conversations.filter((entry) => owned.includes(entry.id));
+      if (params.length > 1) rows = rows.filter((entry) => entry.id === params[1]);
+      return [rows.slice().reverse().slice(0, 20).map((entry) => {
+        const expired = new Date(entry.created_at).getTime() <= Date.now() - 30 * 86400000;
+        const chatMessages = data.messages.filter((message) => message.conversation_id === entry.id);
+        const last = expired ? null : chatMessages.at(-1);
+        return { ...entry, visitor_closed_at: entry.closed ? new Date() : null, message_count: chatMessages.length, last_message: last?.content, last_role: last?.role, messages_expired: Number(expired) };
+      })];
+    }
+    if (query.startsWith('SELECT c.id,c.visitor_closed_at,')) {
+      const owned = data.links.some((link) => link.customer_id === params[0] && link.conversation_id === params[1]);
+      const row = data.conversations.find((entry) => entry.id === params[1]);
+      return [owned && row ? [{ id: row.id, visitor_closed_at: row.closed ? new Date() : null, messages_available: Number(new Date(row.created_at).getTime() > Date.now() - 30 * 86400000) }] : []];
+    }
     if (query.startsWith('SELECT c.id FROM conversations c JOIN customer_conversations cc')) {
       assert.match(query, /cc\.customer_id=\?/);
       assert.match(query, /visitor_closed_at IS NULL/);
@@ -86,10 +102,15 @@ function fakeDatabase(passwordHash) {
     }
     if (query.startsWith('INSERT INTO conversations')) {
       const [id, visitor_token_hash, name, email, phone, company] = params;
+      if (data.conversations.some((entry) => entry.id === id)) {
+        const error = new Error('duplicate conversation');
+        error.code = 'ER_DUP_ENTRY';
+        throw error;
+      }
       data.conversations.push({ id, visitor_token_hash, name, email, phone, company, status: 'new', created_at: new Date(), updated_at: new Date() });
       return [{ affectedRows: 1 }];
     }
-    if (query.startsWith('SELECT id FROM conversations WHERE id=')) return [[...data.conversations.filter((entry) => entry.id === params[0])]];
+    if (query.startsWith('SELECT id FROM conversations WHERE id=')) return [[...data.conversations.filter((entry) => entry.id === params[0] && (!query.includes('visitor_closed_at IS NULL') || !entry.closed))]];
     if (query.startsWith('UPDATE conversations SET updated_at=')) {
       const row = data.conversations.find((entry) => entry.id === params[0]);
       if (row) row.updated_at = new Date();
@@ -118,7 +139,11 @@ function fakeDatabase(passwordHash) {
     if (query.startsWith('SELECT *, created_at<=DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) AS messages_expired FROM conversations WHERE id=')) return [[...data.conversations.filter((entry) => entry.id === params[0]).map((entry) => ({ ...entry, messages_expired: 0 }))]];
     if (query.startsWith('SELECT m.id,m.role,m.content,m.status,m.created_at FROM messages m')) return [[...data.messages.filter((entry) => entry.conversation_id === params[0])]];
     if (query.startsWith('SELECT status,content FROM messages WHERE conversation_id=')) return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && entry.request_id === params[1])]];
-    if (query.startsWith("UPDATE messages SET status='failed' WHERE conversation_id=")) return [{ affectedRows: 0 }];
+    if (query.startsWith("UPDATE messages SET status='failed' WHERE conversation_id=")) {
+      const expired = data.messages.filter((entry) => entry.conversation_id === params[0] && entry.status === 'pending' && new Date(entry.created_at).getTime() < Date.now() - 120000);
+      expired.forEach((entry) => { entry.status = 'failed'; });
+      return [{ affectedRows: expired.length }];
+    }
     if (query.startsWith("SELECT id FROM messages WHERE conversation_id=? AND status='pending'")) return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && entry.status === 'pending')]];
     if (query.startsWith("SELECT COUNT(*) AS total FROM messages WHERE conversation_id=? AND role='user'")) return [[{ total: data.messages.filter((entry) => entry.conversation_id === params[0] && entry.role === 'user').length }]];
     if (query === 'SELECT id FROM catalogue_products WHERE company_id=? AND slug=?') {
@@ -165,17 +190,26 @@ function fakeDatabase(passwordHash) {
     if (query.startsWith('INSERT INTO messages')) {
       if (data.failQuotationConfirmation && params[1] === CONFIRMATION) throw new Error('confirmation insert failed');
       const user = query.includes("'user'");
+      if (user && data.failMessageInsert) throw new Error('message insert failed');
       const entry = { id: data.messages.length + 1, conversation_id: params[0], request_id: user ? params[1] : null, role: user ? 'user' : 'assistant', content: user ? params[2] : params[1], status: user ? 'pending' : 'answered', created_at: new Date() };
       data.messages.push(entry);
       return [{ insertId: entry.id }];
     }
-    if (query.startsWith('SELECT role,content FROM (')) return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && (entry.status === 'answered' || entry.id === params[1])).slice(-40)]];
+    if (query.startsWith('SELECT role,content FROM (')) {
+      if (data.failChatGeneration) throw new Error('chat history unavailable');
+      if (data.closeDuringChatGeneration) {
+        const conversation = data.conversations.find((entry) => entry.id === params[0]);
+        if (conversation) conversation.closed = true;
+      }
+      return [[...data.messages.filter((entry) => entry.conversation_id === params[0] && (entry.status === 'answered' || entry.id === params[1])).slice(-40)]];
+    }
     if (query.startsWith("UPDATE messages SET status='answered'")) {
       const entry = data.messages.find((message) => message.id === params[0] && message.status === 'pending');
       if (entry) entry.status = 'answered';
       return [{ affectedRows: Number(Boolean(entry)) }];
     }
     if (query.startsWith("UPDATE messages SET status='failed' WHERE id=")) {
+      if (data.failMessageStatusUpdate) throw new Error('message status update failed');
       const entry = data.messages.find((message) => message.id === params[0] && message.status === 'pending');
       if (entry) entry.status = 'failed';
       return [{ affectedRows: Number(Boolean(entry)) }];
@@ -235,6 +269,187 @@ async function mutate(agent, method, url, body) {
   return agent[method](url).set('X-CSRF-Token', csrf.body.csrfToken).send(body);
 }
 
+test('the first message creates the chat and welcome together', async () => {
+  const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
+  const app = createApp({ pool, provider: { async answer() { return 'Example response'; } }, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+  const visitor = request.agent(app);
+  const account = { name: 'First Visitor', email: 'first@example.com', phone: '12345678', company: 'Example Company' };
+  assert.equal((await mutate(visitor, 'post', '/api/customer/register', { ...account, password: 'A long customer password!' })).status, 201);
+  const welcome = (await visitor.get('/api/public/config').expect(200)).body.chatWelcome;
+  assert.match(welcome, /what would you like to know/i);
+  assert.equal((await visitor.get('/api/chat/current').expect(200)).body.active, false);
+  assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.messages.length, 0);
+
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true, message: '  ', requestId: crypto.randomUUID() })).status, 400);
+  assert.equal(pool.data.conversations.length, 0);
+  pool.data.failMessageInsert = true;
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true, message: 'Hello', requestId: crypto.randomUUID() })).status, 500);
+  assert.equal(pool.data.conversations.length, 0);
+  assert.equal(pool.data.links.length, 0);
+  assert.equal(pool.data.messages.length, 0);
+  pool.data.failMessageInsert = false;
+
+  const requestId = crypto.randomUUID();
+  const csrf = await visitor.get('/api/csrf').expect(200);
+  const firstRequest = () => visitor.post('/api/chat/start').set('X-CSRF-Token', csrf.body.csrfToken)
+    .send({ consent: true, message: 'Hello', requestId });
+  const [first, retry] = await Promise.all([firstRequest(), firstRequest()]);
+  assert.equal(first.status, 200);
+  assert.equal(retry.status, 200);
+  assert.ok(['answered', 'pending'].includes(first.body.status));
+  assert.ok(['answered', 'pending'].includes(retry.body.status));
+  assert.equal(pool.data.conversations.length, 1);
+  assert.equal(pool.data.links.length, 1);
+  assert.equal(pool.data.conversations[0].id, requestId);
+  assert.equal(pool.data.messages.filter((entry) => entry.role === 'user').length, 1);
+  assert.equal(pool.data.messages[0].content, welcome);
+  assert.equal(pool.data.messages[1].content, 'Hello');
+  assert.equal((await visitor.get('/api/chat/current').expect(200)).body.conversation.id, requestId);
+  pool.data.globalMessageLimitExceeded = true;
+  assert.equal((await firstRequest()).body.status, 'answered');
+  const firstMessage = pool.data.messages.find((entry) => entry.role === 'user');
+  firstMessage.status = 'pending';
+  firstMessage.created_at = new Date(Date.now() - 180000);
+  assert.equal((await firstRequest()).body.status, 'failed');
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true, message: 'Different', requestId })).status, 409);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true, message: 'Hello', requestId: crypto.randomUUID() })).status, 409);
+  assert.equal(pool.data.conversations.length, 1);
+});
+
+test('a committed first message is reported as saved when its reply fails', async (t) => {
+  for (const scenario of ['status update fails', 'conversation closes']) {
+    await t.test(scenario, async () => {
+      const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
+      const app = createApp({ pool, provider: {}, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+      const visitor = request.agent(app);
+      const account = { name: 'First Visitor', email: 'first@example.com', phone: '12345678', company: 'Example Company' };
+      assert.equal((await mutate(visitor, 'post', '/api/customer/register', { ...account, password: 'A long customer password!' })).status, 201);
+      if (scenario === 'status update fails') {
+        pool.data.failChatGeneration = true;
+        pool.data.failMessageStatusUpdate = true;
+      } else {
+        pool.data.closeDuringChatGeneration = true;
+      }
+      const response = await mutate(visitor, 'post', '/api/chat/start', {
+        consent: true, message: 'Tell me about support services.', requestId: crypto.randomUUID()
+      });
+      assert.equal(response.status, scenario === 'status update fails' ? 503 : 410);
+      assert.equal(response.body.saved, true);
+      assert.match(response.body.error, /message was saved/i);
+      assert.equal(pool.data.conversations.length, 1);
+      assert.equal(pool.data.messages.filter((entry) => entry.role === 'user').length, 1);
+    });
+  }
+});
+
+test('a first reply starts a new chat without losing the previous chat', async () => {
+  const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
+  const app = createApp({ pool, provider: {}, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+  const visitor = request.agent(app);
+  const account = { name: 'Returning Visitor', email: 'returning@example.com', phone: '12345678', company: 'Example Company' };
+  assert.equal((await mutate(visitor, 'post', '/api/customer/register', { ...account, password: 'A long customer password!' })).status, 201);
+  const oldId = crypto.randomUUID();
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: 'Hello', requestId: oldId, previousConversationId: null
+  })).status, 200);
+  const oldMessageCount = pool.data.messages.length;
+  pool.data.quotations.push({ conversation_id: oldId, request_id: crypto.randomUUID() });
+
+  await visitor.get('/api/public/config').expect(200);
+  await visitor.get('/api/chat/current').expect(200);
+  assert.equal(pool.data.conversations.length, 1);
+  assert.equal(Boolean(pool.data.conversations[0].closed), false);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: ' ', requestId: crypto.randomUUID(), previousConversationId: oldId
+  })).status, 400);
+  assert.equal(Boolean(pool.data.conversations[0].closed), false);
+
+  pool.data.failMessageInsert = true;
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: 'New question', requestId: crypto.randomUUID(), previousConversationId: oldId
+  })).status, 500);
+  assert.equal(pool.data.conversations.length, 1);
+  assert.equal(Boolean(pool.data.conversations[0].closed), false);
+  assert.equal(pool.data.messages.length, oldMessageCount);
+  pool.data.failMessageInsert = false;
+
+  const oldMessage = pool.data.messages.find((entry) => entry.conversation_id === oldId && entry.role === 'user');
+  oldMessage.status = 'pending';
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: 'New question', requestId: crypto.randomUUID(), previousConversationId: oldId
+  })).status, 409);
+  assert.equal(Boolean(pool.data.conversations[0].closed), false);
+  oldMessage.status = 'answered';
+
+  const newId = crypto.randomUUID();
+  const payload = { consent: true, message: 'New question', requestId: newId, previousConversationId: oldId };
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', payload)).status, 200);
+  assert.equal(pool.data.conversations.length, 2);
+  assert.equal(pool.data.conversations.find((entry) => entry.id === oldId).closed, true);
+  assert.equal(pool.data.quotations[0].conversation_id, oldId);
+  assert.equal((await visitor.get('/api/chat/current').expect(200)).body.conversation.id, newId);
+  const history = (await visitor.get('/api/customer/conversations').expect(200)).body.conversations;
+  assert.equal(history.length, 2);
+  assert.equal(history.find((entry) => entry.id === oldId).active, false);
+  assert.equal(history.find((entry) => entry.id === newId).active, true);
+  assert.ok((await visitor.get(`/api/customer/conversations/${oldId}`).expect(200)).body.messages.some((entry) => entry.content === 'Hello'));
+
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', payload)).status, 200);
+  const oldReplay = await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: 'Hello', requestId: oldId, previousConversationId: null
+  });
+  assert.equal(oldReplay.status, 200);
+  assert.equal(oldReplay.body.saved, true);
+  assert.equal(oldReplay.body.active, false);
+  assert.equal((await visitor.get('/api/chat/current').expect(200)).body.conversation.id, newId);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/messages', {
+    message: 'A stale tab', requestId: crypto.randomUUID(), conversationId: oldId
+  })).status, 410);
+
+  const other = request.agent(app);
+  assert.equal((await mutate(other, 'post', '/api/customer/register', {
+    ...account, email: 'other@example.com', password: 'A long customer password!'
+  })).status, 201);
+  const otherId = crypto.randomUUID();
+  assert.equal((await mutate(other, 'post', '/api/chat/start', {
+    consent: true, message: 'Hello', requestId: otherId, previousConversationId: null
+  })).status, 200);
+  assert.equal((await mutate(other, 'post', '/api/chat/start', {
+    consent: true, message: 'Hello', requestId: oldId, previousConversationId: otherId
+  })).status, 409);
+  assert.equal((await other.get('/api/chat/current').expect(200)).body.conversation.id, otherId);
+  assert.equal((await other.get(`/api/customer/conversations/${oldId}`)).status, 404);
+});
+
+test('simultaneous new-chat requests cannot replace each other', async () => {
+  const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
+  const app = createApp({ pool, provider: {}, env: { NODE_ENV: 'test', APP_ORIGIN: 'http://localhost:3000' } });
+  const visitor = request.agent(app);
+  assert.equal((await mutate(visitor, 'post', '/api/customer/register', {
+    name: 'Returning Visitor', email: 'concurrent@example.com', phone: '12345678', company: 'Example Company', password: 'A long customer password!'
+  })).status, 201);
+  const oldId = crypto.randomUUID();
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', {
+    consent: true, message: 'Hello', requestId: oldId, previousConversationId: null
+  })).status, 200);
+  const csrf = await visitor.get('/api/csrf').expect(200);
+  const send = (payload) => visitor.post('/api/chat/start').set('X-CSRF-Token', csrf.body.csrfToken).send(payload);
+  const newId = crypto.randomUUID();
+  const same = { consent: true, message: 'Hi', requestId: newId, previousConversationId: oldId };
+  const duplicates = await Promise.all([send(same), send(same)]);
+  assert.deepEqual(duplicates.map((response) => response.status), [200, 200]);
+  assert.equal(pool.data.conversations.length, 2);
+  assert.equal(pool.data.messages.filter((entry) => entry.conversation_id === newId && entry.role === 'user').length, 1);
+
+  const competing = await Promise.all(['Hello', 'Hi'].map((message) => send({
+    consent: true, message, requestId: crypto.randomUUID(), previousConversationId: newId
+  })));
+  assert.deepEqual(competing.map((response) => response.status).sort(), [200, 409]);
+  assert.equal(pool.data.conversations.length, 3);
+  assert.equal(pool.data.conversations.filter((entry) => !entry.closed).length, 1);
+});
+
 test('the assistant receives more than the latest ten messages', async () => {
   const pool = fakeDatabase(await argon2.hash('A long test password!', { type: argon2.argon2id }));
   const calls = [];
@@ -286,6 +501,8 @@ test('visitor and staff journeys respect publication and conversation ownership'
   assert.deepEqual(start.body.customer, account);
   assert.equal(start.body.messages.length, 1);
   assert.equal(start.body.messages[0].role, 'assistant');
+  assert.match(start.body.messages[0].content, /company.*products.*services/i);
+  assert.match(start.body.messages[0].content, /request a quotation.*in this chat/i);
   assert.match(start.body.messages[0].content, /what would you like to know/i);
   assert.deepEqual((await visitor.get('/api/chat/current')).body.messages.map(({ role, content }) => ({ role, content })),
     start.body.messages.map(({ role, content }) => ({ role, content })));
@@ -579,6 +796,10 @@ test('misspelled greetings and small talk receive safe conversational replies', 
     assert.match(pool.data.messages.at(-1).content, /hello.*help/i);
   }
   assert.deepEqual(classified, []);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/messages', { message: 'What can you do?', requestId: crypto.randomUUID() })).status, 200);
+  assert.match(pool.data.messages.at(-1).content, /products and services/i);
+  assert.match(pool.data.messages.at(-1).content, /request a quotation.*in this chat.*team/i);
+  assert.notEqual(pool.data.messages.at(-1).content, HANDOFF);
   assert.equal((await mutate(visitor, 'post', '/api/chat/messages', { message: 'How are you?', requestId: crypto.randomUUID() })).status, 200);
   assert.match(pool.data.messages.at(-1).content, /happy to help/i);
   assert.deepEqual(classified, []);
@@ -591,6 +812,44 @@ test('misspelled greetings and small talk receive safe conversational replies', 
   assert.equal(pool.data.messages.at(-1).content, UNKNOWN);
   assert.equal((await mutate(visitor, 'post', '/api/chat/messages', { message: 'helolo, how much is it?', requestId: crypto.randomUUID() })).status, 200);
   assert.equal(pool.data.messages.at(-1).content, HANDOFF);
+});
+
+test('company enquiries use published company knowledge', async () => {
+  const pool = fakeDatabase('unused');
+  const calls = [];
+  const provider = { async answer(input) { calls.push(input); return 'Our head office is in Johor Bahru.'; } };
+  const app = createApp({ pool, provider, env: { NODE_ENV: 'test' } });
+  const visitor = request.agent(app);
+  pool.data.knowledge.push({ id: '1', title: 'SSSB offices', kind: 'company', source_name: 'SSSB website', status: 'published' });
+  pool.data.chunks.push({ knowledge_id: '1', content: 'The SSSB head office is in Johor Bahru.' });
+  assert.equal((await mutate(visitor, 'post', '/api/customer/register', {
+    name: 'Visitor', email: 'visitor@example.com', phone: '12345678', company: 'Example', password: 'A long customer password!'
+  })).status, 201);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/start', { consent: true })).status, 201);
+  assert.equal((await mutate(visitor, 'post', '/api/chat/messages', { message: 'Where is the SSSB office?', requestId: crypto.randomUUID() })).status, 200);
+  assert.deepEqual(calls[0].sources.map((source) => source.title), ['SSSB offices']);
+  assert.equal(pool.data.messages.at(-1).content, 'Our head office is in Johor Bahru.');
+});
+
+test('staff can update existing company knowledge while retaining edits and rebuilding its search chunks', async () => {
+  const password = 'A long test password!';
+  const pool = fakeDatabase(await argon2.hash(password));
+  const app = createApp({ pool, provider: { async answer() { return 'unused'; } }, env: { NODE_ENV: 'test' } });
+  const staff = request.agent(app);
+  const title = 'Semenanjung Selatan (SSSB) offices and contact';
+  const original = 'For quotations and availability, contact the SSSB team directly.\n\nStaff-added office note.';
+  pool.data.knowledge.push({ id: '1', title, kind: 'company', content: original, source_name: 'SSSB website company pages', status: 'published' });
+  pool.data.chunks.push({ knowledge_id: '1', content: original });
+  assert.equal((await mutate(staff, 'post', '/api/admin/login', { email: 'staff@example.com', password })).status, 200);
+
+  const updated = original.replace('For quotations and availability, contact the SSSB team directly.',
+    'To request a quotation, visitors can submit a request through the website chat or contact the SSSB team directly.');
+  assert.equal((await mutate(staff, 'patch', '/api/admin/knowledge/1', { content: updated })).status, 200);
+  assert.equal(pool.data.knowledge[0].content, updated);
+  assert.equal(pool.data.knowledge[0].status, 'published');
+  assert.match(pool.data.chunks[0].content, /request through the website chat/);
+  assert.match(pool.data.chunks[0].content, /Staff-added office note/);
+  assert.doesNotMatch(pool.data.chunks[0].content, /For quotations and availability/);
 });
 
 test('a database connection failure removes the extracted private PDF', async () => {

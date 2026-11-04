@@ -18,7 +18,7 @@ const catalogueMeta = require('./catalogue-meta');
 const { digest, token, cookies, cookieOptions, clearCookie, csrfFor, issueCsrf, staffAuth, consumeLimit, verifyPassword, COOKIE_SESSION, COOKIE_VISITOR } = require('./security');
 
 const ROOT = path.resolve(__dirname, '..');
-const ALLOWED_PAGES = new Set(['index.html', 'about.html', 'contact.html', 'diving-equipments.html', 'inflatable-boats.html', 'other-tradings.html', 'our-policy.html', 'parachute-systems.html', 'products.html', 'fxc.html', 'jfd.html', 'safe-at-sea.html', 'seacraft.html', 'zodiac-nautic.html']);
+const ALLOWED_PAGES = new Set(['index.html', 'about.html', 'contact.html', 'diving-equipments.html', 'inflatable-boats.html', 'other-tradings.html', 'our-policy.html', 'parachute-systems.html', 'privacy.html', 'products.html', 'fxc.html', 'jfd.html', 'safe-at-sea.html', 'seacraft.html', 'zodiac-nautic.html']);
 const EMAIL = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ADMIN_STATUSES = new Set(['new', 'in_progress', 'closed']);
@@ -27,14 +27,14 @@ const GREETING = /^(?:(?:hi|hello|hey|good (?:morning|afternoon|evening)|selamat
 const THANKS = /^(?:(?:thanks|thank you|thx|terima kasih)[\s!.,?]*)+$/i;
 const SMALLTALK = /^(?:how (?:are|r) (?:you|u)|how(?:'s| is) (?:it|things) going)[\s!.,?]*$/i;
 const HELP = /^(?:help|help me|what can you do|what do you do)[\s!.,?]*$/i;
-const WELCOME_REPLY = 'Hello! I’m the Semenanjung Selatan product assistant. I can help with our products and specifications. What would you like to know?';
-const GREETING_REPLY = 'Hello! How can I help you with our products today?';
-const THANKS_REPLY = 'You’re welcome. If you have another product question, I’m here to help.';
+const WELCOME_REPLY = 'Hello! I’m Haji, your Semenanjung Selatan assistant. I can help with questions about our company, products and services. You can also select Request a quotation in this chat to send a request to our team. What would you like to know?';
+const GREETING_REPLY = 'Hello! How can I help you with Semenanjung Selatan today?';
+const THANKS_REPLY = 'You’re welcome. Let me know if you have any other questions about Semenanjung Selatan.';
 const CONVERSATION_REPLIES = {
   GREETING: GREETING_REPLY,
   THANKS: THANKS_REPLY,
-  HELP: 'I can help you explore our products and their published specifications. What would you like to know?',
-  SMALLTALK: 'I’m here and happy to help! What would you like to know about our products?'
+  HELP: 'I can help you learn about Semenanjung Selatan, our products and services. Select Request a quotation in this chat to send your request to our team.',
+  SMALLTALK: 'I’m here and happy to help! What would you like to know about Semenanjung Selatan?'
 };
 
 function greetingReply(message) {
@@ -109,7 +109,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
 
   app.get('/api/csrf', issueCsrf);
   customers.mount(app, csrf, limit);
-  app.get('/api/public/config', (req, res) => res.json({ contactEmail: settings.contactEmail, whatsappUrl: settings.whatsappUrl }));
+  app.get('/api/public/config', (req, res) => res.json({ contactEmail: settings.contactEmail, whatsappUrl: settings.whatsappUrl, chatWelcome: WELCOME_REPLY }));
   app.get('/api/catalogue', asyncRoute(async (req, res) => {
     try {
       res.json(await publicCatalogue(pool));
@@ -143,6 +143,12 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     const [rows] = await pool.execute(
       `SELECT c.id,c.status,c.created_at,c.visitor_closed_at,
          (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id) AS message_count,
+         (SELECT m.content FROM messages m
+           WHERE m.conversation_id=c.id AND c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)
+           ORDER BY m.id DESC LIMIT 1) AS last_message,
+         (SELECT m.role FROM messages m
+           WHERE m.conversation_id=c.id AND c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)
+           ORDER BY m.id DESC LIMIT 1) AS last_role,
          c.created_at<=DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) AS messages_expired
        FROM customer_conversations cc JOIN conversations c ON c.id=cc.conversation_id
        WHERE cc.customer_id=? ORDER BY c.created_at DESC LIMIT 20`, [account.id]
@@ -155,6 +161,8 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
         createdAt: row.created_at,
         endedAt: row.visitor_closed_at,
         messageCount: Number(row.message_count),
+        lastMessage: row.last_message ? String(row.last_message).slice(0, 240) : null,
+        lastRole: row.last_role || null,
         messagesExpired: Boolean(Number(row.messages_expired)),
         active: Boolean(active && active.id === row.id)
       }))
@@ -182,18 +190,65 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       messages: expired ? [] : await enrichedMessages(row.id)
     });
   }));
+  async function firstMessageReplay(conn, customerId, id, message, currentId) {
+    const [owned] = await conn.execute(
+      `SELECT c.id,c.visitor_closed_at,
+              c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) AS messages_available
+       FROM customer_conversations cc JOIN conversations c ON c.id=cc.conversation_id
+       WHERE cc.customer_id=? AND c.id=? LIMIT 1`, [customerId, id]
+    );
+    if (!owned.length) return null;
+    if (!Number(owned[0].messages_available)) {
+      return { status: 409, body: { error: 'This chat request is no longer available. Please reload your conversation.' } };
+    }
+    await conn.execute("UPDATE messages SET status='failed' WHERE conversation_id=? AND status='pending' AND created_at<DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 2 MINUTE)", [id]);
+    const [duplicate] = await conn.execute('SELECT status,content FROM messages WHERE conversation_id=? AND request_id=?', [id, id]);
+    if (!duplicate.length || duplicate[0].content !== message) {
+      return { status: 409, body: { error: 'This request ID belongs to a different message.' } };
+    }
+    const body = { ok: true, status: duplicate[0].status };
+    if (owned[0].visitor_closed_at || !currentId || String(currentId).toLowerCase() !== id) Object.assign(body, { saved: true, active: false });
+    return { status: 200, body };
+  }
+
   app.post('/api/chat/start', csrf, asyncRoute(async (req, res) => {
     const account = await customers.customer(req);
     if (!account) return res.status(401).json({ error: 'Sign in or create an account to start a chat.' });
     if (req.body?.consent !== true) return res.status(400).json({ error: 'Please agree to the notice before starting a chat.' });
+    const { message, requestId, previousConversationId } = req.body || {};
+    const withFirstMessage = message !== undefined || requestId !== undefined;
+    const hasPreviousConversation = Object.hasOwn(req.body || {}, 'previousConversationId');
+    const normalizedMessage = typeof message === 'string' ? message.trim() : '';
+    if (withFirstMessage && (!normalizedMessage || message.length > 4000 || typeof requestId !== 'string' || !UUID.test(requestId))) {
+      return res.status(400).json({ error: 'Enter a message of up to 4,000 characters.' });
+    }
+    if (hasPreviousConversation && (!withFirstMessage || (previousConversationId !== null &&
+        (typeof previousConversationId !== 'string' || !UUID.test(previousConversationId))))) {
+      return res.status(400).json({ error: 'The previous conversation ID is invalid.' });
+    }
+    const previousId = typeof previousConversationId === 'string' ? previousConversationId.toLowerCase() : null;
+    const id = withFirstMessage ? requestId.toLowerCase() : crypto.randomUUID();
     await limit(`start:${req.ip}`, 12, 3600);
-    if (await customers.activeForCustomer(account.id)) return res.status(409).json({ error: 'An active conversation already exists.' });
-    const id = crypto.randomUUID();
+    if (withFirstMessage) {
+      await limit(`message:ip:${req.ip}`, 100, 3600);
+      await limit(`message:conversation:${id}`, 30, 3600);
+    }
+    const existing = await customers.activeForCustomer(account.id);
+    if (withFirstMessage) {
+      const replay = await firstMessageReplay(pool, account.id, id, normalizedMessage, existing?.id);
+      if (replay) return res.status(replay.status).json(replay.body);
+    }
+    if ((existing && (!withFirstMessage || !hasPreviousConversation || previousId !== String(existing.id).toLowerCase())) ||
+        (!existing && hasPreviousConversation && previousId !== null)) {
+      return res.status(409).json({ error: 'Your current chat has changed. Return to Messages and try again.', code: 'CHAT_CHANGED' });
+    }
+    if (withFirstMessage) await limit('message:global', Number(env.AI_HOURLY_LIMIT || 250), 3600);
     const secret = token();
     const insert = `INSERT INTO conversations (id,visitor_token_hash,visitor_expires_at,name,email,phone,company,consent_version)
                     VALUES (?,?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 DAY),?,?,?,?,?)`;
     const conn = await pool.getConnection();
     let welcomeId;
+    let messageId;
     let details;
     try {
       await conn.beginTransaction();
@@ -201,22 +256,54 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
         'SELECT id,email,name,phone,company FROM customer_accounts WHERE id=? AND disabled=0 FOR UPDATE', [account.id]
       );
       if (!locked.length) { await conn.commit(); return res.status(401).json({ error: 'Sign in again.' }); }
-      if (await customers.activeForCustomer(account.id, conn)) {
+      const active = await customers.activeForCustomer(account.id, conn);
+      if (withFirstMessage) {
+        const replay = await firstMessageReplay(conn, account.id, id, normalizedMessage, active?.id);
+        if (replay) { await conn.commit(); return res.status(replay.status).json(replay.body); }
+      }
+      if ((active && (!withFirstMessage || !hasPreviousConversation || previousId !== String(active.id).toLowerCase())) ||
+          (!active && hasPreviousConversation && previousId !== null)) {
         await conn.commit();
-        return res.status(409).json({ error: 'An active conversation already exists.' });
+        return res.status(409).json({ error: 'Your current chat has changed. Return to Messages and try again.', code: 'CHAT_CHANGED' });
       }
       const profile = customerProfile(locked[0]);
       if (!validProfile(profile)) {
         await conn.commit();
         return res.status(409).json({ error: 'Complete your account details before starting a chat.', code: 'PROFILE_INCOMPLETE' });
       }
+      if (active) {
+        const [previous] = await conn.execute(
+          `SELECT id FROM conversations WHERE id=? AND visitor_closed_at IS NULL
+           AND created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) FOR UPDATE`, [active.id]
+        );
+        if (!previous.length) {
+          await conn.commit();
+          return res.status(409).json({ error: 'Your current chat has changed. Return to Messages and try again.', code: 'CHAT_CHANGED' });
+        }
+        await conn.execute("UPDATE messages SET status='failed' WHERE conversation_id=? AND status='pending' AND created_at<DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 2 MINUTE)", [active.id]);
+        const [pending] = await conn.execute("SELECT id FROM messages WHERE conversation_id=? AND status='pending' LIMIT 1", [active.id]);
+        if (pending.length) {
+          await conn.commit();
+          return res.status(409).json({ error: 'Please wait for the previous response before starting a new chat.' });
+        }
+        await conn.execute('UPDATE conversations SET visitor_closed_at=UTC_TIMESTAMP(3) WHERE id=?', [active.id]);
+      }
       details = { email: locked[0].email, ...profile };
       await conn.execute(insert, [id, digest(secret), details.name, details.email, details.phone, details.company, '2026-11-02']);
       await conn.execute('INSERT INTO customer_conversations (conversation_id,customer_id) VALUES (?,?)', [id, account.id]);
       const [welcome] = await conn.execute("INSERT INTO messages (conversation_id,role,content,status) VALUES (?,'assistant',?,'answered')", [id, WELCOME_REPLY]);
       welcomeId = welcome.insertId;
+      if (withFirstMessage) {
+        const [saved] = await conn.execute("INSERT INTO messages (conversation_id,request_id,role,content,status) VALUES (?,?,'user',?,'pending')", [id, id, normalizedMessage]);
+        messageId = saved.insertId;
+      }
       await conn.commit();
-    } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
+    } catch (error) {
+      await conn.rollback();
+      if (withFirstMessage && error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'This chat request is no longer available. Please reload your conversation.' });
+      throw error;
+    } finally { conn.release(); }
+    if (withFirstMessage) return completeChatMessage(res, id, message, normalizedMessage, messageId);
     res.status(201).json({
       active: true,
       customer: details,
@@ -261,10 +348,16 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
     if (!account) return res.status(401).json({ error: 'Sign in to continue your chat.' });
     const row = await customers.activeForCustomer(account.id);
     if (!row) return res.status(401).json({ error: 'Start a conversation first.' });
-    const { message, requestId } = req.body || {};
+    const { message, requestId, conversationId } = req.body || {};
     const normalizedMessage = typeof message === 'string' ? message.trim() : '';
     if (!normalizedMessage || message.length > 4000 || typeof requestId !== 'string' || !UUID.test(requestId)) {
       return res.status(400).json({ error: 'Enter a message of up to 4,000 characters.' });
+    }
+    if (conversationId !== undefined && (typeof conversationId !== 'string' || !UUID.test(conversationId))) {
+      return res.status(400).json({ error: 'The conversation ID is invalid.' });
+    }
+    if (conversationId && conversationId.toLowerCase() !== String(row.id).toLowerCase()) {
+      return res.status(410).json({ error: 'Your chat has changed. Return to Messages to open the current chat.' });
     }
     await limit(`message:ip:${req.ip}`, 100, 3600);
     await limit(`message:conversation:${row.id}`, 30, 3600);
@@ -294,6 +387,10 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
       await conn.execute('UPDATE conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=?', [row.id]);
       await conn.commit();
     } catch (error) { await conn.rollback(); throw error; } finally { conn.release(); }
+    return completeChatMessage(res, row.id, message, normalizedMessage, messageId);
+  }));
+
+  async function completeChatMessage(res, conversationId, message, normalizedMessage, messageId) {
     try {
       let answer;
       if (requiresHandoff(message)) answer = HANDOFF;
@@ -307,7 +404,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
                AND c.created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)
                AND (m.status='answered' OR m.id=?)
              ORDER BY m.id DESC LIMIT 40
-           ) recent ORDER BY id ASC`, [row.id, messageId]
+           ) recent ORDER BY id ASC`, [conversationId, messageId]
         );
         const recent = [];
         let budget = 24000;
@@ -323,7 +420,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
         else {
           const [active] = await pool.execute(
             `SELECT id FROM conversations WHERE id=? AND visitor_closed_at IS NULL
-             AND created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)`, [row.id]
+             AND created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY)`, [conversationId]
           );
           if (!active.length) {
             const error = new Error('Conversation expired or ended');
@@ -345,7 +442,7 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
         await resultConn.beginTransaction();
         const [active] = await resultConn.execute(
           `SELECT id FROM conversations WHERE id=? AND visitor_closed_at IS NULL
-           AND created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) FOR UPDATE`, [row.id]
+           AND created_at>DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 30 DAY) FOR UPDATE`, [conversationId]
         );
         if (!active.length) {
           const error = new Error('Conversation expired or ended');
@@ -354,17 +451,28 @@ function createApp({ pool, provider = createProvider(), env = process.env }) {
         }
         const [updated] = await resultConn.execute("UPDATE messages SET status='answered' WHERE id=? AND status='pending'", [messageId]);
         if (updated.affectedRows !== 1) throw new Error('Response expired');
-        await resultConn.execute("INSERT INTO messages (conversation_id,role,content,status) VALUES (?,'assistant',?,'answered')", [row.id, answer]);
-        await resultConn.execute('UPDATE conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=?', [row.id]);
+        await resultConn.execute("INSERT INTO messages (conversation_id,role,content,status) VALUES (?,'assistant',?,'answered')", [conversationId, answer]);
+        await resultConn.execute('UPDATE conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=?', [conversationId]);
         await resultConn.commit();
       } catch (error) { await resultConn.rollback(); throw error; } finally { resultConn.release(); }
-      res.json({ ok: true, status: 'answered' });
+      return res.json({ ok: true, status: 'answered' });
     } catch (error) {
-      await pool.execute("UPDATE messages SET status='failed' WHERE id=? AND status='pending'", [messageId]);
-      if (error.conversationExpired) return res.status(410).json({ error: 'This conversation has expired or ended.' });
-      res.status(503).json({ error: 'Your message was saved, but the assistant could not respond. Please contact our team.', saved: true });
+      let statusUpdated = true;
+      try {
+        const [updated] = await pool.execute("UPDATE messages SET status='failed' WHERE id=? AND status='pending'", [messageId]);
+        statusUpdated = updated.affectedRows === 1;
+      } catch {
+        statusUpdated = false;
+      }
+      if (error.conversationExpired) return res.status(410).json({ error: 'Your message was saved, but this conversation has expired or ended.', saved: true });
+      return res.status(503).json({
+        error: statusUpdated
+          ? 'Your message was saved, but the assistant could not respond. Please contact our team.'
+          : 'Your message was saved, but the assistant response could not be confirmed. Please check the conversation.',
+        saved: true
+      });
     }
-  }));
+  }
 
   app.get('/api/admin/session', (req, res, next) => protectedStaff(req, res, () => res.json({ authenticated: true, user: { email: req.staff.email } })));
   app.post('/api/admin/login', csrf, asyncRoute(async (req, res) => {

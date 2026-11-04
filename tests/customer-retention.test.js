@@ -117,15 +117,25 @@ function fakeDatabase() {
       })) : []];
     }
     if (query.startsWith('SELECT c.id,c.status,c.created_at,c.visitor_closed_at,')) {
+      assert.match(query, /c\.created_at>DATE_SUB\(UTC_TIMESTAMP\(3\), INTERVAL 30 DAY\)/);
       const owned = data.links.filter((link) => link.customer_id === params[0]).map((link) => link.conversation_id);
       const rows = data.conversations.filter((entry) => owned.includes(entry.id))
         .sort((a, b) => b.created_at - a.created_at)
         .slice(0, 20)
-        .map((entry) => ({
-          ...entry,
-          message_count: data.messages.filter((message) => message.conversation_id === entry.id).length,
-          messages_expired: Number(entry.created_at <= now - 30 * DAY)
-        }));
+        .map((entry) => {
+          const expired = entry.created_at <= now - 30 * DAY;
+          const messages = expired ? [] : data.messages
+            .filter((message) => message.conversation_id === entry.id)
+            .sort((a, b) => Number(a.id) - Number(b.id));
+          const last = messages[messages.length - 1];
+          return {
+            ...entry,
+            message_count: data.messages.filter((message) => message.conversation_id === entry.id).length,
+            last_message: last ? last.content : null,
+            last_role: last ? last.role : null,
+            messages_expired: Number(expired)
+          };
+        });
       return [rows];
     }
     if (query.startsWith('SELECT c.* FROM customer_conversations')) {
@@ -612,8 +622,8 @@ test('customer chat history lists only owned chats and hides expired transcripts
   const list = await device.get('/api/customer/conversations');
   assert.equal(list.status, 200);
   assert.deepEqual(list.body.conversations, [
-    { id: recent.row.id, status: 'new', createdAt: recent.row.created_at, endedAt: null, messageCount: 2, messagesExpired: false, active: true },
-    { id: old.row.id, status: 'answered', createdAt: old.row.created_at, endedAt: null, messageCount: 1, messagesExpired: true, active: false }
+    { id: recent.row.id, status: 'new', createdAt: recent.row.created_at, endedAt: null, messageCount: 2, lastMessage: 'Recent answer', lastRole: 'assistant', messagesExpired: false, active: true },
+    { id: old.row.id, status: 'answered', createdAt: old.row.created_at, endedAt: null, messageCount: 1, lastMessage: null, lastRole: null, messagesExpired: true, active: false }
   ]);
 
   const chat = await device.get(`/api/customer/conversations/${recent.row.id}`);
