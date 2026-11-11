@@ -218,6 +218,278 @@ test('quotation requests retain the product selected by an enquiry', async (t) =
   assert.equal(chat.state.requests.some((request) => request.method === 'POST'), false);
 });
 
+test('an enquiry does not preselect its product for an unrelated conversation', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [
+    { key: 'shadow', name: 'Shadow' }, { key: 'enforcer', name: 'Enforcer' }
+  ] }] };
+  const state = { conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/jfd.html', {
+    html: jfdHtml, state, intercept: (url) => url === '/api/catalogue' ? response(catalogue) : undefined
+  });
+  t.after(() => chat.dom.window.close());
+  clickProduct(chat);
+  await waitFor(() => chat.find('#sssb-chat-message').value.includes('JFD Shadow'));
+  state.conversation = { id: '22222222-2222-4222-8222-222222222222' };
+  state.messages = [welcome, { id: '2', role: 'assistant', content: 'Enforcer details', status: 'answered', products: [{ name: 'JFD Enforcer' }] }];
+  chat.window.dispatchEvent(new chat.window.PageTransitionEvent('pageshow', { persisted: true }));
+  await waitFor(() => chat.find('.chat-messages').textContent.includes('Enforcer details'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+test('an enquiry product is cleared when the signed-in account changes', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [
+    { key: 'shadow', name: 'Shadow' }, { key: 'enforcer', name: 'Enforcer' }
+  ] }] };
+  const state = { conversation: { id: previousId }, messages: [welcome], customer };
+  const chat = createChat('https://example.test/jfd.html', {
+    html: jfdHtml, state, intercept: (url) => {
+      if (url === '/api/catalogue') return response(catalogue);
+      if (url === '/api/chat/current') return response({ active: true, customer: state.customer, conversation: state.conversation, messages: state.messages });
+    }
+  });
+  t.after(() => chat.dom.window.close());
+  clickProduct(chat);
+  await waitFor(() => chat.find('#sssb-chat-message').value.includes('JFD Shadow'));
+  state.customer = { ...customer, email: 'other@example.test' };
+  state.messages = [welcome, { id: '2', role: 'assistant', content: 'Enforcer details', status: 'answered', products: [{ name: 'JFD Enforcer' }] }];
+  chat.window.dispatchEvent(new chat.window.PageTransitionEvent('pageshow', { persisted: true }));
+  await waitFor(() => chat.find('.chat-messages').textContent.includes('Enforcer details'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+for (const published of [true, false]) {
+  test(`a newer enquiry ${published ? 'selects the product after a catalogue refresh' : 'asks for a selection when the product is unavailable'}`, async (t) => {
+    const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [{ key: 'shadow', name: 'Shadow' }] }] };
+    const chat = createChat('https://example.test/jfd.html', {
+      html: jfdHtml, intercept: (url) => url === '/api/catalogue' ? response(catalogue) : undefined
+    });
+    t.after(() => chat.dom.window.close());
+    clickProduct(chat);
+    await waitFor(() => chat.find('#sssb-chat-message').value.includes('JFD Shadow'));
+    chat.find('.chat-quotation-open').click();
+    await waitFor(() => chat.find('#sssb-quotation-product').value === 'jfd/shadow');
+    chat.find('.chat-quotation-actions .chat-quotation-back').click();
+    if (published) catalogue.companies[0].products.push({ key: 'enforcer', name: 'Enforcer' });
+    clickProduct(chat, '#enforcer .product-detail-actions a');
+    chat.find('.chat-quotation-open').click();
+    await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+    assert.equal(chat.find('#sssb-quotation-product').value, published ? 'jfd/enforcer' : '');
+    if (!published) assert.match(chat.find('.chat-quotation-catalogue-status').textContent, /select|choose/i);
+    const select = chat.find('#sssb-quotation-product');
+    select.value = 'other';
+    select.dispatchEvent(new chat.window.Event('change', { bubbles: true }));
+    chat.find('.chat-quotation-actions .chat-quotation-back').click();
+    chat.find('.chat-quotation-open').click();
+    await waitFor(() => !select.disabled);
+    assert.equal(select.value, 'other');
+  });
+}
+
+test('an enquiry product follows its draft into the saved conversation', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [{ key: 'shadow', name: 'Shadow' }] }] };
+  const state = { conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/jfd.html', {
+    html: jfdHtml, state, intercept: (url, requestOptions) => {
+      if (url === '/api/catalogue') return response(catalogue);
+      if (url === '/api/chat/start') {
+        const payload = JSON.parse(requestOptions.body);
+        state.conversation = { id: payload.requestId };
+        state.messages = [welcome, { id: '2', role: 'user', content: payload.message, status: 'answered' }];
+        return response({ ok: true, status: 'answered' });
+      }
+    }
+  });
+  t.after(() => chat.dom.window.close());
+  await openChat(chat);
+  chat.find('.chat-archive-ask').click();
+  clickProduct(chat);
+  assert.match(chat.find('#sssb-chat-message').value, /JFD Shadow/);
+  chat.find('.chat-message-form').dispatchEvent(new chat.window.Event('submit', { bubbles: true, cancelable: true }));
+  await waitFor(() => !chat.find('.chat-quotation-open').disabled && chat.find('.chat-messages').textContent.includes('JFD Shadow'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/shadow');
+});
+
+test('enquiry products remain separate when switching between an active chat and a draft', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [
+    { key: 'shadow', name: 'Shadow' }, { key: 'enforcer', name: 'Enforcer' }
+  ] }] };
+  const state = { conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/jfd.html', {
+    html: jfdHtml, state, intercept: (url, requestOptions) => {
+      if (url === '/api/catalogue') return response(catalogue);
+      if (url === '/api/chat/start') {
+        const payload = JSON.parse(requestOptions.body);
+        state.conversation = { id: payload.requestId };
+        state.messages = [welcome, { id: '2', role: 'user', content: payload.message, status: 'answered' }];
+        return response({ ok: true, status: 'answered' });
+      }
+    }
+  });
+  t.after(() => chat.dom.window.close());
+  clickProduct(chat);
+  await waitFor(() => chat.find('#sssb-chat-message').value.includes('JFD Shadow'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => chat.find('#sssb-quotation-product').value === 'jfd/shadow');
+  chat.find('.chat-quotation-actions .chat-quotation-back').click();
+  chat.find('.chat-conversation-back').click();
+  await waitFor(() => chat.find('.chat-archive-list button'));
+  chat.find('.chat-archive-ask').click();
+  clickProduct(chat, '#enforcer .product-detail-actions a');
+  chat.find('.chat-conversation-back').click();
+  await waitFor(() => chat.find('.chat-archive-list button'));
+  chat.find('.chat-archive-list button').click();
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/shadow');
+  chat.find('.chat-quotation-actions .chat-quotation-back').click();
+  chat.find('.chat-conversation-back').click();
+  await waitFor(() => chat.find('.chat-archive-list button'));
+  chat.find('.chat-archive-ask').click();
+  chat.find('.chat-message-form').dispatchEvent(new chat.window.Event('submit', { bubbles: true, cancelable: true }));
+  await waitFor(() => !chat.find('.chat-quotation-open').disabled && chat.find('.chat-messages').textContent.includes('JFD Enforcer'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+test('an unsigned enquiry retains its product through sign-in and chat creation', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [{ key: 'shadow', name: 'Shadow' }] }] };
+  const state = { conversation: null, messages: [], signedIn: false };
+  const chat = createChat('https://example.test/jfd.html', {
+    html: jfdHtml, state, intercept: (url, requestOptions) => {
+      if (url === '/api/catalogue') return response(catalogue);
+      if (url === '/api/customer/login') {
+        state.signedIn = true;
+        return response({ authenticated: true, customer });
+      }
+      if (url === '/api/chat/start') {
+        const payload = JSON.parse(requestOptions.body);
+        assert.equal(payload.previousConversationId, null);
+        state.conversation = { id: payload.requestId };
+        state.messages = [welcome, { id: '2', role: 'user', content: payload.message, status: 'answered' }];
+        return response({ ok: true, status: 'answered' });
+      }
+    }
+  });
+  t.after(() => chat.dom.window.close());
+  clickProduct(chat);
+  await waitFor(() => chat.find('#sssb-chat-message').value.includes('JFD Shadow'));
+  chat.find('.chat-message-form').dispatchEvent(new chat.window.Event('submit', { bubbles: true, cancelable: true }));
+  chat.find('.chat-account-login').click();
+  chat.find('#sssb-account-email').value = customer.email;
+  chat.find('#sssb-account-password').value = 'test-password';
+  chat.find('.chat-account-form').dispatchEvent(new chat.window.Event('submit', { bubbles: true, cancelable: true }));
+  await waitFor(() => state.conversation && !chat.find('.chat-quotation-open').disabled);
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/shadow');
+});
+
+test('signing out clears contact-page enquiry context before another account signs in', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [
+    { key: 'shadow', name: 'Shadow' }, { key: 'enforcer', name: 'Enforcer' }
+  ] }] };
+  const state = { signedIn: true, customer, conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/contact.html?company=jfd&product=shadow', {
+    state, intercept: (url) => {
+      if (url === '/api/catalogue') return response(catalogue);
+      if (url === '/api/chat/current') return state.signedIn
+        ? response({ active: true, customer: state.customer, conversation: state.conversation, messages: state.messages })
+        : response({ active: false, customer: null });
+      if (url === '/api/customer/logout') {
+        state.signedIn = false;
+        return response({ ok: true });
+      }
+      if (url === '/api/customer/login') {
+        state.signedIn = true;
+        state.customer = { ...customer, email: 'other@example.test' };
+        state.conversation = { id: '22222222-2222-4222-8222-222222222222' };
+        state.messages = [welcome, { id: '2', role: 'assistant', content: 'Enforcer details', status: 'answered', products: [{ name: 'JFD Enforcer' }] }];
+        return response({ authenticated: true, customer: state.customer });
+      }
+    }
+  });
+  t.after(() => chat.dom.window.close());
+  await openChat(chat);
+  assert.match(chat.find('#sssb-chat-message').value, /JFD Shadow/);
+  chat.find('[data-chat-tab="account"]').click();
+  chat.find('.chat-account-logout').click();
+  await waitFor(() => !chat.find('.chat-account-login').hidden && !chat.find('.chat-account-login').disabled);
+  chat.find('.chat-account-login').click();
+  chat.find('#sssb-account-email').value = 'other@example.test';
+  chat.find('#sssb-account-password').value = 'test-password';
+  chat.find('.chat-account-form').dispatchEvent(new chat.window.Event('submit', { bubbles: true, cancelable: true }));
+  await waitFor(() => chat.find('.chat-account-email').textContent === 'other@example.test' && !chat.find('[data-chat-tab="messages"]').disabled);
+  chat.find('[data-chat-tab="messages"]').click();
+  await waitFor(() => chat.find('.chat-archive-list button'));
+  chat.find('.chat-archive-list button').click();
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+test('a contact-page enquiry does not preselect its product in a later unrelated chat', async (t) => {
+  const catalogue = { companies: [{ key: 'jfd', name: 'JFD', products: [
+    { key: 'shadow', name: 'Shadow' }, { key: 'enforcer', name: 'Enforcer' }
+  ] }] };
+  const state = { conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/contact.html?company=jfd&product=shadow', {
+    state, intercept: (url) => url === '/api/catalogue' ? response(catalogue) : undefined
+  });
+  t.after(() => chat.dom.window.close());
+  await openChat(chat);
+  assert.match(chat.find('#sssb-chat-message').value, /JFD Shadow/);
+  state.conversation = { id: '22222222-2222-4222-8222-222222222222' };
+  state.messages = [welcome, { id: '2', role: 'assistant', content: 'Enforcer details', status: 'answered', products: [{ name: 'JFD Enforcer' }] }];
+  chat.window.dispatchEvent(new chat.window.PageTransitionEvent('pageshow', { persisted: true }));
+  await waitFor(() => chat.find('.chat-messages').textContent.includes('Enforcer details'));
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+test('a late contact-page catalogue response cannot restore context in an unrelated chat', async (t) => {
+  const catalogue = { companies: [
+    { key: 'example', name: 'Example', products: [{ key: 'new', name: 'New Product' }] },
+    { key: 'jfd', name: 'JFD', products: [{ key: 'enforcer', name: 'Enforcer' }] }
+  ] };
+  const state = { conversation: { id: previousId }, messages: [welcome] };
+  const chat = createChat('https://example.test/contact.html?company=example&product=new', {
+    state, intercept: (url) => url === '/api/catalogue' ? response(catalogue) : undefined
+  });
+  t.after(() => chat.dom.window.close());
+  await openChat(chat);
+  assert.equal(chat.find('#sssb-chat-message').value, '');
+  state.conversation = { id: '22222222-2222-4222-8222-222222222222' };
+  state.messages = [welcome, { id: '2', role: 'assistant', content: 'Enforcer details', status: 'answered', products: [{ name: 'JFD Enforcer' }] }];
+  chat.window.dispatchEvent(new chat.window.PageTransitionEvent('pageshow', { persisted: true }));
+  await waitFor(() => chat.find('.chat-messages').textContent.includes('Enforcer details'));
+  chat.window.document.dispatchEvent(new chat.window.CustomEvent('sssb:catalogue', { detail: catalogue }));
+  assert.equal(chat.find('#sssb-chat-message').value, '');
+  chat.find('.chat-quotation-open').click();
+  await waitFor(() => !chat.find('#sssb-quotation-product').disabled);
+  assert.equal(chat.find('#sssb-quotation-product').value, 'jfd/enforcer');
+});
+
+test('a catalogue update does not restore contact context a visitor cleared', async (t) => {
+  const chat = createChat();
+  t.after(() => chat.dom.window.close());
+  await openChat(chat);
+  const input = chat.find('#sssb-chat-message');
+  input.value = '';
+  input.dispatchEvent(new chat.window.Event('input', { bubbles: true }));
+  chat.window.document.dispatchEvent(new chat.window.CustomEvent('sssb:catalogue', { detail: {
+    companies: [{ key: 'jfd', name: 'JFD', products: [{ key: 'shadow', name: 'Shadow' }] }]
+  } }));
+  assert.equal(input.value, '');
+});
+
 test('a product enquiry remains available in a new chat while both drafts are preserved', async (t) => {
   const chat = createChat();
   t.after(() => chat.dom.window.close());
