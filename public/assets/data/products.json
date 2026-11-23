@@ -227,10 +227,10 @@
       {
         "id": "tc1150-transport-chamber",
         "name": "TC1150 Transport Chamber",
-        "type": "JFD Cowan one-person mobile transport chamber",
+        "type": "JFD Cowan two-person mobile transport chamber",
         "image": "jfd-tc1150.jpg",
         "photo": true,
-        "summary": "A transport chamber with an integral trolley and detachable tow-bar, allowing one person to move it for detached diving operations. It supports on-site recompression and transport under pressure to larger treatment chambers.",
+        "summary": "A transport chamber for two divers or a patient and a seated attendant. Its integral trolley and detachable tow-bar allow one person to move it for detached diving operations. It supports on-site recompression and transport under pressure to larger treatment chambers.",
         "specs": [
           [
             "Manufacturer",
@@ -279,12 +279,13 @@
         ],
         "spec_note": "Manufacturer specifications. Confirm the current configuration and availability with SSSB.",
         "features": [
+          "Accommodates two divers or a patient and a seated attendant",
           "Integral trolley with detachable tow-bar",
           "Manoeuvrable by one person",
           "Transportable by helicopter, fixed-wing aircraft or light pick-up",
           "Optional non-magnetic TC1150-MCM version for mine countermeasure vessels"
         ],
-        "source": "https://www.james-fisher.com/divisions/defence/commercial-diving-and-hyperbaric-equipment/saturation-diving-equipment/"
+        "source": "https://www.jfdglobal.com/media/z0fkcjec/tc-mds-751_r1.pdf"
       }
     ],
     "seacraft": [

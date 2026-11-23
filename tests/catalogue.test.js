@@ -2,6 +2,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { JSDOM } = require('jsdom');
 const { buildCatalogue } = require('../server/catalogue');
 const { inspectImport, importCatalogue } = require('../server/catalogue-import');
 const catalogue = require('../public/assets/data/products.json');
@@ -108,6 +111,27 @@ test('catalogue conversion preserves product details and source attribution', ()
   assert.match(etac.content, /Manufacturer source: https:\/\/www\.sharkmarine\.com\/e-tac/);
   assert.match(etac.content, /\/shark-marine\.html#e-tac/);
   assert.match(entries.find((entry) => entry.key === 'product:shark-marine/floating-gps').content, /fixes at the surface/);
+});
+
+test('TC1150 capacity and its manufacturer reference agree across the seed, static page and knowledge', () => {
+  const product = catalogue.companies.jfd.find((item) => item.id === 'tc1150-transport-chamber');
+  const entry = buildCatalogue(catalogue).find((item) => item.key === 'product:jfd/tc1150-transport-chamber');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'jfd.html'), 'utf8');
+  const dom = new JSDOM(html);
+  try {
+    const card = dom.window.document.querySelector('#tc1150-transport-chamber');
+    assert.match(product.type, /two-person/i);
+    assert.match(product.summary, /two divers or a patient and a seated attendant/i);
+    assert.equal(card.querySelector('.product-detail-type').textContent.replace(/^\d+\s*\/\s*/, ''), product.type);
+    assert.equal(card.querySelector('.product-detail-summary').textContent, product.summary);
+    assert.equal(card.querySelector('.product-detail-actions .text-link').href, product.source);
+    assert.equal(product.source, 'https://www.jfdglobal.com/media/z0fkcjec/tc-mds-751_r1.pdf');
+    assert.match(entry.content, /Product type: JFD Cowan two-person mobile transport chamber/i);
+    assert.match(entry.content, /two divers or a patient and a seated attendant/i);
+    assert.ok(entry.content.includes(product.source));
+  } finally {
+    dom.window.close();
+  }
 });
 
 test('catalogue conversion rejects malformed or duplicate product IDs', () => {

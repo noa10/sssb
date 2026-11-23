@@ -530,6 +530,25 @@ test('a new-chat draft receives a product added by a later catalogue response', 
   assert.equal(input.value, 'I would like to enquire about Example New Product.');
 });
 
+test('direct chamber enquiry links retain the product when the catalogue API is unavailable', async (t) => {
+  for (const model of ['TC650', 'TC1000', 'TC1150']) {
+    for (const signedIn of [true, false]) {
+      const slug = `${model.toLowerCase()}-transport-chamber`;
+      const state = { conversation: signedIn ? { id: previousId } : null, messages: signedIn ? [welcome] : [], signedIn };
+      const chat = createChat(`https://example.test/contact.html?company=jfd&product=${slug}#enquiry`, {
+        state, intercept: (url) => url === '/api/catalogue' ? response({ error: 'Unavailable' }, 503) : undefined
+      });
+      t.after(() => chat.dom.window.close());
+      chat.window.eval(catalogueScript);
+      await waitFor(() => !chat.find('.chat-archive-ask').disabled);
+      chat.find('.chat-archive-ask').click();
+      assert.equal(chat.find('#sssb-chat-message').value, `I would like to enquire about JFD ${model} Transport Chamber.`);
+      assert.equal(state.requests.some((request) => request.url === '/api/catalogue'), true);
+      assert.equal(state.requests.some((request) => request.method === 'POST'), false);
+    }
+  }
+});
+
 test('a saved first message is restored after the immediate reload fails', async (t) => {
   const chat = createChat();
   t.after(() => chat.dom.window.close());
