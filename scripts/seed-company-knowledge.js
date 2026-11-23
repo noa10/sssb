@@ -15,7 +15,7 @@ const ENTRIES = [
       'Country: Malaysia',
       'Founded: 1983. SSSB has operated for more than four decades.',
       'Business: A Malaysian supplier of military equipment, specialising in airborne, army, naval and special forces requirements. It also serves government agencies and specialist marine operators.',
-      'Product categories: Diving Equipment (JFD and Seacraft), Parachute Systems (FXC), and Inflatable Systems (Zodiac Nautic and Safe at Sea).',
+      'Product categories: Diving Equipment (JFD, Seacraft and Shark Marine), Parachute Systems (FXC), and Inflatable Systems (Zodiac Nautic and Safe at Sea).',
       'Role: SSSB is the exclusive Malaysian importer and company representative for the specific brands it promotes, operating under commercial agreements with original equipment manufacturers (OEMs). Agency-level government procurement is handled directly by SSSB as the supplier.',
       'Capabilities: OEM representation, sole-source supply and accredited government procurement, an integrated supply chain and global logistics, specialist advice and training, and after-sales support in the air, on land and at sea.',
       'History: Founded in 1983 as a Malaysian supply partner. Long-standing OEM relationships and an integrated supply chain extended its reach from a local trader to a global logistics partner.',

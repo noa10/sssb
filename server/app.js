@@ -18,7 +18,11 @@ const catalogueMeta = require('./catalogue-meta');
 const { digest, token, cookies, cookieOptions, clearCookie, csrfFor, issueCsrf, staffAuth, consumeLimit, verifyPassword, COOKIE_SESSION, COOKIE_VISITOR } = require('./security');
 
 const ROOT = path.resolve(__dirname, '..');
-const ALLOWED_PAGES = new Set(['index.html', 'about.html', 'contact.html', 'diving-equipments.html', 'inflatable-boats.html', 'other-tradings.html', 'our-policy.html', 'parachute-systems.html', 'privacy.html', 'products.html', 'fxc.html', 'jfd.html', 'safe-at-sea.html', 'seacraft.html', 'zodiac-nautic.html']);
+const ALLOWED_PAGES = new Set([
+  'index.html', 'about.html', 'contact.html', 'diving-equipments.html', 'inflatable-boats.html',
+  'other-tradings.html', 'our-policy.html', 'parachute-systems.html', 'privacy.html', 'products.html',
+  ...catalogueMeta.companies.map((company) => company.page)
+]);
 const EMAIL = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ADMIN_STATUSES = new Set(['new', 'in_progress', 'closed']);

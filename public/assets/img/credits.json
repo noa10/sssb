@@ -229,6 +229,46 @@
     {
       "file": "products/safe-at-sea-rescuerunner.png",
       "source": "https://www.safeatsea.se/wp-content/uploads/rescuerunner-product-unmounted-600x474.png"
+    },
+    {
+      "file": "companies/shark-marine-logo.png",
+      "source": "https://www.sharkmarine.com/"
+    },
+    {
+      "file": "products/shark-marine-e-tac.png",
+      "source": "https://static.wixstatic.com/media/f951bb_29463ce5a5634cf4b95e591e7a708016~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-navigator.png",
+      "source": "https://static.wixstatic.com/media/f951bb_7e2d664574d34037b24135c18ba2883e~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-dive-tablet-ii.png",
+      "source": "https://static.wixstatic.com/media/f951bb_7184b6c415184e0abbaa1a53a73d668c~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-navcam.png",
+      "source": "https://static.wixstatic.com/media/f951bb_d78fe1da1de0437085e574afa2afe90a~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-dns.png",
+      "source": "https://static.wixstatic.com/media/f951bb_20d74686d5524df8931cb36852dfc3ea~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-floating-gps.png",
+      "source": "https://static.wixstatic.com/media/f951bb_714e687d054c475da5036dcc5369f0bf~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-uhmd.png",
+      "source": "https://static.wixstatic.com/media/a9f9bc_0b4ca2fab9b347848d24fe8ccbbd2757~mv2.png"
+    },
+    {
+      "file": "products/shark-marine-sub-net.jpg",
+      "source": "https://static.wixstatic.com/media/a9f9bc_501998185e264e2eb740b189be3f426d~mv2.jpg"
+    },
+    {
+      "file": "products/shark-marine-divelog.png",
+      "source": "https://static.wixstatic.com/media/a9f9bc_41d8319e827a43999a8f9d431ae79631~mv2.png"
     }
   ]
 }

@@ -70,6 +70,9 @@ test('requires the fields relevant to each manufacturer and discards stale field
   assert.equal(normaliseQuotation({ ...base, ...zodiac, region: ' Paris ', enquiryType: 'stale' }).region, 'Paris');
   assert.equal(normaliseQuotation({ ...base, ...zodiac }).message, '');
   assert.equal(normaliseQuotation({ ...base, companyId: 'seacraft', enquiryType: {}, country: 'stale' }).message, '');
+  const shark = normaliseQuotation({ ...base, companyId: 'shark-marine', productKey: 'navigator', productName: 'Shark Marine Navigator' });
+  assert.equal(shark.companyId, 'shark-marine');
+  assert.equal(shark.productKey, 'navigator');
   assert.equal(normaliseQuotation({ ...base, country: 'stale', region: {} }).country, '');
 });
 

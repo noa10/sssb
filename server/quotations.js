@@ -5,7 +5,7 @@ const { customerProfile, validProfile } = require('./customer');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PRODUCT_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const COMPANIES = new Set(['jfd', 'fxc', 'seacraft', 'zodiac-nautic', 'safe-at-sea']);
+const COMPANIES = new Set(catalogue.COMPANY_IDS);
 const ENQUIRY_TYPES = Object.freeze({
   'commercial-diving': 'Commercial diving and hyperbaric equipment',
   'defence-diving': 'Defence diving',
